@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para usuarios
+model User {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  password    String
+  role        UserRole  @default(WAITER)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN     // Administrador con control total
+  CASHIER   // Cajero con acceso a casi todo, requiere autorización para operaciones importantes
+  WAITER    // Mesero con acceso limitado
+}
+
+// Modelo para la información del local
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  image       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("stores")
+}
+
+// Modelo para las categorías de productos
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  icon        String?
+  shortcut    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+// Modelo para el inventario de productos
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  price       Float
+  stock       Int       @default(0)
+  minStock    Int?      @default(5)
+  type        ProductType @default(NON_ALCOHOLIC)
+  image       String?
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tabItems    TabItem[]
+
+  @@map("products")
+}
+
+// Modelo para las mesas/tabs abiertas
+model Tab {
+  id          String    @id @default(cuid())
+  name        String
+  isActive    Boolean   @default(true)
+  subtotal    Float     @default(0)
+  tip         Float     @default(0)
+  total       Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  items       TabItem[]
+
+  @@map("tabs")
+}
+
+// Modelo para los items de cada mesa
+model TabItem {
+  id          String   @id @default(cuid())
+  quantity    Int      @default(1)
+  price       Float
+  tabId       String
+  productId   String
+  tab         Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tabId, productId])
+  @@map("tab_items")
+}
+
+enum ProductType {
+  ALCOHOLIC
+  NON_ALCOHOLIC
+}
+
+// Modelo para las ventas completadas
+model Sale {
+  id          String    @id @default(cuid())
+  tabId       String    @unique
+  subtotal    Float
+  tip         Float     @default(0)
+  total       Float
+  paymentMethod PaymentMethod @default(CASH)
+  cashReceived Float?
+  change      Float?    @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  items       SaleItem[]
+  cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
+  cashRegisterId String?
+
+  @@map("sales")
+}
+
+// Modelo para los items de cada venta
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  productId   String
+  productName String   // Guardamos el nombre por si el producto se elimina
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@map("sale_items")
+}
+
+// Modelo para la caja registradora
+model CashRegister {
+  id            String    @id @default(cuid())
+  openingAmount Float     @default(0)
+  closingAmount Float?
+  totalSales    Float     @default(0)
+  totalCash     Float     @default(0)
+  totalCard     Float     @default(0)
+  isOpen        Boolean   @default(true)
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+  openedBy      String?   // Usuario que abrió la caja
+  closedBy      String?   // Usuario que cerró la caja
+  notes         String?
+  sales         Sale[]
+  transactions  CashTransaction[]
+
+  @@map("cash_registers")
+}
+
+// Modelo para transacciones de caja (entradas/salidas de dinero)
+model CashTransaction {
+  id              String            @id @default(cuid())
+  type            TransactionType
+  amount          Float
+  description     String
+  cashRegisterId  String
+  cashRegister    CashRegister      @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  createdBy       String?           // Usuario que realizó la transacción
+
+  @@map("cash_transactions")
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+enum TransactionType {
+  INCOME    // Entrada de dinero
+  EXPENSE   // Salida de dinero
+  OPENING   // Apertura de caja
+  CLOSING   // Cierre de caja
+}
