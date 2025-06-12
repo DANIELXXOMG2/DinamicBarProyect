@@ -5,10 +5,11 @@ import { z } from 'zod'
 
 const updateProductSchema = z.object({
   name: z.string().min(1).optional(),
-  price: z.number().positive().optional(),
+  purchasePrice: z.number().positive().optional(),
+  salePrice: z.number().positive().optional(),
   stock: z.number().int().min(0).optional(),
   minStock: z.number().int().min(0).optional(),
-  type: z.nativeEnum(ProductType).optional(),
+  type: z.enum(['ALCOHOLIC', 'NON_ALCOHOLIC']).optional(),
   image: z.string().optional(),
   categoryId: z.string().optional()
 })
@@ -25,7 +26,7 @@ const imageUpdateSchema = z.object({
 
 // GET /api/inventory/products/[id] - Obtener un producto específico
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -80,7 +81,7 @@ export async function PUT(
 
 // DELETE /api/inventory/products/[id] - Eliminar un producto
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

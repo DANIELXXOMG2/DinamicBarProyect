@@ -1,6 +1,10 @@
 import type React from "react"
-import { SidebarNav } from "@/components/sidebar-nav"
+import { ClientLayout } from "@/components/client-layout"
 import "@/app/globals.css"
+
+export const metadata = {
+  generator: 'v0.dev'
+};
 
 export default function RootLayout({
   children,
@@ -8,17 +12,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
-        <div className="flex h-screen bg-gray-100">
-          <SidebarNav />
+        <ClientLayout>
           {children}
-        </div>
+        </ClientLayout>
       </body>
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

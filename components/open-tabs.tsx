@@ -7,15 +7,29 @@ import { Plus, X, Edit2, Check } from "lucide-react"
 import { TabDetail } from "./tab-detail"
 import { toast } from "@/hooks/use-toast"
 
+// Definir los tipos basados en la API
+interface Product {
+  id: string
+  name: string
+  salePrice: number
+  purchasePrice: number
+  stock: number
+  type: "ALCOHOLIC" | "NON_ALCOHOLIC"
+  image?: string
+  categoryId: string
+  category: {
+    id: string
+    name: string
+  }
+}
+
 interface TabItem {
   id: string
+  tabId: string
   productId: string
   quantity: number
   price: number
-  product: {
-    name: string
-    price: number
-  }
+  product: Product
 }
 
 interface Tab {
@@ -23,12 +37,17 @@ interface Tab {
   name: string
   items: TabItem[]
   isActive: boolean
+  subtotal?: number
+  total?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export function TableManagement() {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [loading, setLoading] = useState(true)
-  const [newTabName, setNewTabName] = useState("")
+  const [newTabName, setNewTabName] = useState("Mesa")
+  const [nameError, setNameError] = useState("")
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
@@ -63,55 +82,24 @@ export function TableManagement() {
     }
   }
 
-  const addItemToTab = (tabId: string, item: { title: string; price: number }) => {
-    setTabs(prevTabs => 
-      prevTabs.map(tab => {
-        if (tab.id === tabId) {
-          const existingItem = tab.items.find(i => i.product.name === item.title)
-          if (existingItem) {
-            return {
-              ...tab,
-              items: tab.items.map(i => 
-                i.product.name === item.title 
-                  ? { ...i, quantity: i.quantity + 1 }
-                  : i
-              )
-            }
-          } else {
-            return {
-              ...tab,
-              items: [...tab.items, { ...item, quantity: 1 }]
-            }
-          }
-        }
-        return tab
-      })
-    )
-  }
-
-  const updateItemQuantity = async (tabId: string, itemTitle: string, newQuantity: number) => {
+  const updateItemQuantity = async (tabId: string, productId: string, newQuantity: number) => {
     try {
-      const tab = tabs.find(t => t.id === tabId)
-      if (!tab) return
-      
-      const item = tab.items.find(i => i.product.name === itemTitle)
-      if (!item) return
-      
       if (newQuantity <= 0) {
-        const response = await fetch(`/api/tabs/${tabId}/items/${item.productId}`, {
+        const response = await fetch(`/api/tabs/${tabId}/items/${productId}`, {
           method: 'DELETE'
         })
         
         if (response.ok) {
-          setTabs(tabs.map(t => 
-            t.id === tabId 
-              ? { ...t, items: t.items.filter(i => i.product.name !== itemTitle) } 
-              : t
-          ))
+          const { tab } = await response.json()
+          setTabs(prevTabs => prevTabs.map(t => t.id === tabId ? tab : t))
+          toast({
+            title: "Producto eliminado",
+            description: "Producto eliminado de la mesa"
+          })
         }
       } else {
-        const response = await fetch(`/api/tabs/${tabId}/items/${item.productId}`, {
-          method: 'PATCH',
+        const response = await fetch(`/api/tabs/${tabId}/items/${productId}`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
@@ -119,18 +107,8 @@ export function TableManagement() {
         })
         
         if (response.ok) {
-          setTabs(tabs.map(t => 
-            t.id === tabId 
-              ? { 
-                  ...t, 
-                  items: t.items.map(i => 
-                    i.product.name === itemTitle 
-                      ? { ...i, quantity: newQuantity }
-                      : i
-                  ) 
-                } 
-              : t
-          ))
+          const { tab } = await response.json()
+          setTabs(prevTabs => prevTabs.map(t => t.id === tabId ? tab : t))
         }
       }
     } catch (error) {
@@ -153,7 +131,15 @@ export function TableManagement() {
       return
     }
 
+    // Verificar si ya existe una mesa con el mismo nombre
+    const tableExists = tabs.some(tab => tab.name.toLowerCase() === newTabName.trim().toLowerCase());
+    if (tableExists) {
+      setNameError("Ya existe una mesa con este nombre");
+      return;
+    }
+
     try {
+      setNameError(""); // Limpiar error previo
       const response = await fetch('/api/tabs', {
         method: 'POST',
         headers: {
@@ -165,7 +151,7 @@ export function TableManagement() {
       if (response.ok) {
         const { tab } = await response.json()
         setTabs([...tabs, tab])
-        setNewTabName("")
+        setNewTabName("Mesa")
         toast({
           title: "Mesa creada",
           description: `Mesa "${tab.name}" creada exitosamente`
@@ -226,7 +212,7 @@ export function TableManagement() {
 
     try {
       const response = await fetch(`/api/tabs/${editingTabId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -248,95 +234,112 @@ export function TableManagement() {
       console.error('Error updating tab name:', error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Error al actualizar el nombre de la mesa",
+        description: error instanceof Error ? error.message : "Error al actualizar la mesa",
         variant: "destructive"
       })
-    } finally {
+    }
+    setEditingTabId(null)
+  }
+
+  const cancelEditTabName = () => {
       setEditingTabId(null)
       setEditingTabName("")
     }
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleCreateTab()
+    }
+  }
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTab(activeTab === tabId ? null : tabId)
+  }
+
+  const getTabTotal = (tab: Tab) => {
+    if (tab.total) return tab.total
+    return tab.items.reduce((sum, item) => sum + (item.product.salePrice * item.quantity), 0).toFixed(2)
   }
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
-      <div className="w-full md:w-64 border-r p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Input
-            value={newTabName}
-            onChange={(e) => setNewTabName(e.target.value)}
-            placeholder="Nombre de mesa"
-            className="flex-1"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleCreateTab()
-              }
-            }}
-          />
-          <Button size="icon" onClick={handleCreateTab}>
-            <Plus className="h-4 w-4" />
-          </Button>
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Mesas abiertas</h2>
+        <div className="flex flex-col items-end">
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Nueva mesa..."
+              value={newTabName}
+              onChange={(e) => {
+                setNewTabName(e.target.value);
+                setNameError("");
+              }}
+              onKeyDown={handleKeyDown}
+              className="w-40"
+            />
+            <Button onClick={handleCreateTab} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Mesa
+            </Button>
+          </div>
+          {nameError && (
+            <span className="text-xs text-red-500 mt-1">{nameError}</span>
+          )}
         </div>
-        <div className="space-y-2 max-h-[calc(100vh-180px)] overflow-y-auto">
+      </div>
+
           {loading ? (
-            <div className="text-center py-4 text-gray-500">Cargando mesas...</div>
+        <div className="flex-1 flex items-center justify-center">
+          <p>Cargando mesas...</p>
+        </div>
           ) : tabs.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">No hay mesas activas</div>
+        <div className="flex-1 flex items-center justify-center flex-col">
+          <p className="text-gray-500 mb-2">No hay mesas abiertas</p>
+          <p className="text-sm text-gray-400">Usa el botón "Nueva Mesa" para crear una</p>
+        </div>
           ) : (
-            tabs.map((tab) => (
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tabs.map(tab => (
               <div
                 key={tab.id}
-                className={`flex items-center justify-between p-2 border rounded-md cursor-pointer ${
-                  activeTab === tab.id ? "bg-green-50 border-green-500" : ""
-                }`}
-                onClick={() => setActiveTab(tab.id)}
+                className={`border rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-md ${activeTab === tab.id ? 'bg-gray-50 border-blue-500' : ''}`}
+                onClick={() => handleTabClick(tab.id)}
               >
-                <div className="flex-1">
+                <div className="flex justify-between items-center mb-2">
                   {editingTabId === tab.id ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center space-x-2">
                       <Input
                         value={editingTabName}
                         onChange={(e) => setEditingTabName(e.target.value)}
-                        className="h-8 text-sm"
+                        onKeyDown={(e) => e.key === 'Enter' && updateTabName()}
                         autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') updateTabName()
-                          if (e.key === 'Escape') setEditingTabId(null)
-                        }}
+                        className="w-32"
                       />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={updateTabName}
-                      >
-                        <Check className="h-3 w-3" />
+                      <Button size="icon" variant="ghost" onClick={updateTabName}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={cancelEditTabName}>
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
                     <>
-                      <div className="font-medium">{tab.name}</div>
-                      <div className="text-xs text-gray-500">{tab.items.length} productos</div>
-                    </>
-                  )}
-                </div>
-                <div className="flex">
-                  {!editingTabId && (
+                      <h3 className="font-medium">{tab.name}</h3>
+                      <div className="flex items-center space-x-2">
                     <Button
+                          size="icon" 
                       variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleEditTabName(tab)
                       }}
                     >
-                      <Edit2 className="h-3 w-3" />
+                          <Edit2 className="h-4 w-4" />
                     </Button>
-                  )}
                   <Button
+                          size="icon" 
                     variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleCloseTab(tab.id)
@@ -344,24 +347,33 @@ export function TableManagement() {
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {tab.items.length} {tab.items.length === 1 ? 'producto' : 'productos'}
+                </div>
+                <div className="font-semibold mt-2">
+                  ${getTabTotal(tab)}
                 </div>
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="flex-1">
-        {activeTab ? (
+      )}
+
+      {activeTab && (
+        <div className="mt-4">
           <TabDetail 
-            tab={tabs.find((t) => t.id === activeTab)!} 
-            onUpdateQuantity={(itemTitle, newQuantity) => updateItemQuantity(activeTab, itemTitle, newQuantity)}
+            tab={tabs.find(tab => tab.id === activeTab)!} 
+            onUpdateQuantity={updateItemQuantity}
+            onCloseTab={() => {
+              handleCloseTab(activeTab)
+            }}
           />
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Selecciona una mesa o crea una nueva
           </div>
         )}
-      </div>
     </div>
   )
 }

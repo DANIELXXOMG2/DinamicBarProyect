@@ -7,7 +7,8 @@ import { toast } from "@/hooks/use-toast"
 interface Product {
   id: string
   name: string
-  price: number
+  purchasePrice: number
+  salePrice: number
   stock: number
   type: "ALCOHOLIC" | "NON_ALCOHOLIC"
   image?: string
@@ -72,7 +73,7 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
       filtered = products.filter((product) => {
         const nameMatch = product.name.toLowerCase().includes(query)
         const categoryMatch = product.category.name.toLowerCase().includes(query)
-        const priceMatch = product.price.toString().includes(query)
+        const priceMatch = product.salePrice.toString().includes(query)
         return nameMatch || categoryMatch || priceMatch
       })
     }
@@ -104,7 +105,7 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
         body: JSON.stringify({
           productId,
           quantity,
-          price: product.price
+          price: product.salePrice
         })
       })
 
@@ -164,19 +165,21 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
         </div>
       )}
       
-      {filteredProducts.map((product) => (
-        <ProductCard
-          key={product.id}
-          id={product.id}
-          title={product.name}
-          price={product.price}
-          stock={product.stock}
-          type={product.type === "ALCOHOLIC" ? "Alc" : "NoAlc"}
-          image={product.image}
-          onAddToTable={handleAddToTable}
-          canAddToTable={!!selectedTable}
-        />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            id={product.id}
+            title={product.name}
+            salePrice={product.salePrice}
+            stock={product.stock}
+            type={product.type === "ALCOHOLIC" ? "Alc" : "NoAlc"}
+            image={product.image}
+            onAddToTable={handleAddToTable}
+            canAddToTable={!!selectedTable}
+          />
+        ))}
+      </div>
     </div>
   )
 }

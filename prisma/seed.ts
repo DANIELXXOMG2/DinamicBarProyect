@@ -1,11 +1,10 @@
-import { PrismaClient, ProductType } from '@prisma/client'
+import { PrismaClient, ProductType, UserRole } from '@prisma/client'
 import { AuthService } from '@/lib/services/auth'
+import { generateProducts } from './seedProducts'
 
 const prisma = new PrismaClient()
 
-// Definimos localmente los tipos que necesitamos
-type UserRole = 'ADMIN' | 'CASHIER' | 'WAITER'
-
+// Definimos los tipos que necesitamos
 interface CreateUserParams {
   username: string
   password: string
@@ -13,53 +12,69 @@ interface CreateUserParams {
 }
 
 async function createUser(data: CreateUserParams) {
-  // Hashear la contraseña directamente
+  // Hashear la contraseña
   const hashedPassword = AuthService.hashPassword(data.password)
   
-  // Usar prisma directamente para crear usuarios, evitando el uso de .user
-  return prisma.$queryRaw`
-    INSERT INTO users (id, username, password, role, "createdAt", "updatedAt")
-    VALUES (gen_random_uuid(), ${data.username}, ${hashedPassword}, ${data.role}, NOW(), NOW())
-    RETURNING id, username, role
-  `
+  // Usar Prisma Client directamente en lugar de SQL raw
+  return prisma.user.create({
+    data: {
+      username: data.username,
+      password: hashedPassword,
+      role: data.role
+    }
+  })
 }
 
 async function main() {
   console.log('🌱 Iniciando seed de la base de datos...')
+  console.time('Tiempo total de seed')
 
   try {
     // Limpiar datos existentes
+    console.log('🧹 Limpiando datos existentes...')
+    console.time('Limpieza de datos')
     await prisma.tabItem.deleteMany()
     await prisma.tab.deleteMany()
     await prisma.product.deleteMany()
     await prisma.category.deleteMany()
     
-    // Eliminar usuarios directamente con SQL raw
-    await prisma.$executeRaw`DELETE FROM users`
+    // Eliminar usuarios con Prisma Client
+    await prisma.user.deleteMany()
     
     await prisma.store.deleteMany()
+    console.timeEnd('Limpieza de datos')
 
     // Crear usuarios predeterminados
+    console.log('👤 Creando usuarios...')
+    console.time('Creación de usuarios')
     await Promise.all([
       createUser({
         username: 'admin',
         password: 'admin123',
-        role: 'ADMIN'
+        role: UserRole.ADMIN
       }),
       createUser({
         username: 'cajero',
         password: 'cajero123',
-        role: 'CASHIER'
+        role: UserRole.CASHIER
       }),
       createUser({
         username: 'mesero',
         password: 'mesero123',
-        role: 'WAITER'
+        role: UserRole.WAITER
+      }),
+      createUser({
+        username: process.env.ADMIN || 'danielxxomg',
+        password: process.env.ADMIN_PASS || '40334277',
+        role: UserRole.ADMIN
       })
     ])
+    console.timeEnd('Creación de usuarios')
     console.log('✅ Usuarios creados')
 
     // Crear información del local
+    console.log('🏢 Creando información del local...')
+    console.time('Creación de información del local')
     const store = await prisma.store.create({
       data: {
         name: 'Mi Restaurante POS',
@@ -67,9 +82,12 @@ async function main() {
         address: 'Calle Principal 123, Ciudad'
       }
     })
+    console.timeEnd('Creación de información del local')
     console.log('✅ Información del local creada:', store.name)
 
     // Crear categorías
+    console.log('📂 Creando categorías...')
+    console.time('Creación de categorías')
     const categories = await Promise.all([
       prisma.category.create({
         data: {
@@ -121,157 +139,19 @@ async function main() {
         }
       })
     ])
+    console.timeEnd('Creación de categorías')
     console.log('✅ Categorías creadas:', categories.length)
 
-    // Crear productos
-    const products = await Promise.all([
-      // Cervezas
-      prisma.product.create({
-        data: {
-          name: 'Corona',
-          price: 5.99,
-          stock: 24,
-          minStock: 5,
-          type: ProductType.ALCOHOLIC,
-          categoryId: categories[0].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Heineken',
-          price: 5.49,
-          stock: 18,
-          minStock: 5,
-          type: ProductType.ALCOHOLIC,
-          categoryId: categories[0].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Stella Artois',
-          price: 6.99,
-          stock: 15,
-          minStock: 5,
-          type: ProductType.ALCOHOLIC,
-          categoryId: categories[0].id
-        }
-      }),
-      
-      // Licores
-      prisma.product.create({
-        data: {
-          name: 'Jack Daniels',
-          price: 8.99,
-          stock: 12,
-          minStock: 3,
-          type: ProductType.ALCOHOLIC,
-          categoryId: categories[1].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Absolut Vodka',
-          price: 7.99,
-          stock: 15,
-          minStock: 3,
-          type: ProductType.ALCOHOLIC,
-          categoryId: categories[1].id
-        }
-      }),
-      
-      // Snaks
-      prisma.product.create({
-        data: {
-          name: 'Nachos',
-          price: 4.99,
-          stock: 20,
-          minStock: 5,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[2].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Papas Fritas',
-          price: 3.99,
-          stock: 25,
-          minStock: 5,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[2].id
-        }
-      }),
-      
-      // Gaseosas
-      prisma.product.create({
-        data: {
-          name: 'Coca Cola',
-          price: 2.49,
-          stock: 30,
-          minStock: 10,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[3].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Sprite',
-          price: 2.49,
-          stock: 25,
-          minStock: 10,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[3].id
-        }
-      }),
-      prisma.product.create({
-        data: {
-          name: 'Fanta',
-          price: 2.49,
-          stock: 20,
-          minStock: 10,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[3].id
-        }
-      }),
-      
-      // Miscelánea
-      prisma.product.create({
-        data: {
-          name: 'Chicles',
-          price: 1.99,
-          stock: 50,
-          minStock: 15,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[4].id
-        }
-      }),
-      
-      // Cigarrería
-      prisma.product.create({
-        data: {
-          name: 'Marlboro Rojo',
-          price: 8.99,
-          stock: 40,
-          minStock: 10,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[5].id
-        }
-      }),
-      
-      // Cacharrería
-      prisma.product.create({
-        data: {
-          name: 'Cargador USB',
-          price: 12.99,
-          stock: 15,
-          minStock: 5,
-          type: ProductType.NON_ALCOHOLIC,
-          categoryId: categories[6].id
-        }
-      })
-    ])
+    // Crear productos usando el generador
+    console.log('🛒 Creando productos (alrededor de 200)...')
+    console.time('Creación de productos')
+    const products = await generateProducts(prisma, categories)
+    console.timeEnd('Creación de productos')
     console.log('✅ Productos creados:', products.length)
 
     // Crear algunas mesas de ejemplo
+    console.log('🪑 Creando mesas de ejemplo...')
+    console.time('Creación de mesas')
     const tabs = await Promise.all([
       prisma.tab.create({
         data: {
@@ -292,29 +172,31 @@ async function main() {
     await prisma.tabItem.create({
       data: {
         tabId: tabs[0].id,
-        productId: products[0].id, // Corona
-        quantity: 2,
-        price: products[0].price
+        productId: products[0].id,
+        quantity: 2
       }
     })
 
     await prisma.tabItem.create({
       data: {
         tabId: tabs[0].id,
-        productId: products[5].id, // Nachos
-        quantity: 1,
-        price: products[5].price
+        productId: products[5].id,
+        quantity: 1
       }
     })
+    console.timeEnd('Creación de mesas')
 
     // Recalcular totales de las mesas
+    console.log('🧮 Recalculando totales...')
+    console.time('Recálculo de totales')
     for (const tab of tabs) {
       const tabItems = await prisma.tabItem.findMany({
-        where: { tabId: tab.id }
+        where: { tabId: tab.id },
+        include: { product: true }
       })
       
       const subtotal = tabItems.reduce((sum, item) => {
-        return sum + (item.price * item.quantity)
+        return sum + (item.product.salePrice * item.quantity)
       }, 0)
       
       await prisma.tab.update({
@@ -325,7 +207,9 @@ async function main() {
         }
       })
     }
+    console.timeEnd('Recálculo de totales')
 
+    console.timeEnd('Tiempo total de seed')
     console.log('🎉 Seed completado exitosamente!')
   } catch (error) {
     console.error('Error en el seed:', error)

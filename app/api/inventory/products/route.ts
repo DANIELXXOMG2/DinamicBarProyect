@@ -5,12 +5,12 @@ import { z } from 'zod'
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
-  price: z.number().positive('El precio debe ser positivo'),
-  stock: z.number().int().min(0, 'El stock no puede ser negativo'),
-  minStock: z.number().int().min(0).optional(),
+  categoryId: z.string().min(1, 'La categoría es requerida'),
+  stock: z.number().int().min(0, 'El stock debe ser mayor o igual a 0'),
+  purchasePrice: z.number().positive('El precio de compra debe ser positivo'),
+  salePrice: z.number().positive('El precio de venta debe ser positivo'),
   type: z.nativeEnum(ProductType),
-  image: z.string().optional(),
-  categoryId: z.string().min(1, 'La categoría es requerida')
+  image: z.string().optional()
 })
 
 // GET /api/inventory/products - Obtener todos los productos

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { SidebarNav } from "@/components/sidebar-nav"
 
 export default function POSPage() {
   const router = useRouter()
@@ -13,9 +12,8 @@ export default function POSPage() {
   }, [router])
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <SidebarNav />
-      <div className="flex-1 flex flex-col overflow-hidden">{/* Content will be rendered in the layout */}</div>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Content will be rendered in the layout */}
     </div>
   )
 }

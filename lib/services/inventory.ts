@@ -3,7 +3,8 @@ import { Product, Category, ProductType } from '@prisma/client'
 
 export interface CreateProductData {
   name: string
-  price: number
+  salePrice: number
+  purchasePrice: number
   stock: number
   minStock?: number
   type: ProductType
@@ -13,7 +14,8 @@ export interface CreateProductData {
 
 export interface UpdateProductData {
   name?: string
-  price?: number
+  salePrice?: number
+  purchasePrice?: number
   stock?: number
   minStock?: number
   type?: ProductType

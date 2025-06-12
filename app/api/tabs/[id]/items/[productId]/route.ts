@@ -9,13 +9,14 @@ const updateItemSchema = z.object({
 // PUT /api/tabs/[id]/items/[productId] - Actualizar cantidad de item
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; productId: string } }
+  { params }: { params: Promise<{ id: string; productId: string }> }
 ) {
   try {
+    const { id, productId } = await params
     const body = await request.json()
     const { quantity } = updateItemSchema.parse(body)
     
-    const tab = await TabsService.updateTabItem(params.id, params.productId, { quantity })
+    const tab = await TabsService.updateTabItem(id, productId, { quantity })
     return NextResponse.json({ tab })
   } catch (error) {
     console.error('Error in PUT /api/tabs/[id]/items/[productId]:', error)
@@ -36,11 +37,12 @@ export async function PUT(
 
 // DELETE /api/tabs/[id]/items/[productId] - Eliminar item de la mesa
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string; productId: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string; productId: string }> }
 ) {
   try {
-    const tab = await TabsService.removeItemFromTab(params.id, params.productId)
+    const { id, productId } = await params
+    const tab = await TabsService.removeItemFromTab(id, productId)
     return NextResponse.json({ tab, message: 'Item eliminado correctamente' })
   } catch (error) {
     console.error('Error in DELETE /api/tabs/[id]/items/[productId]:', error)

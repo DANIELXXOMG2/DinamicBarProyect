@@ -2,19 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from '@/lib/services/auth'
 import { z } from 'zod'
 
-// Definición local de UserRole para validación
-const UserRole = z.enum(['ADMIN', 'CASHIER', 'WAITER'])
-type UserRole = z.infer<typeof UserRole>
-
 const loginSchema = z.object({
   username: z.string().min(1, 'El nombre de usuario es requerido'),
   password: z.string().min(1, 'La contraseña es requerida')
-})
-
-const createUserSchema = z.object({
-  username: z.string().min(3, 'El nombre de usuario debe tener al menos 3 caracteres'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  role: UserRole
 })
 
 // POST /api/auth - Iniciar sesión

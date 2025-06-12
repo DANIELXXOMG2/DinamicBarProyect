@@ -28,9 +28,15 @@ export async function GET(request: NextRequest) {
     if (today === 'true') {
       sales = await SalesService.getTodaySales()
     } else if (startDate && endDate) {
+      // Validar las fechas con el esquema
+      const validatedDates = dateRangeSchema.parse({
+        startDate,
+        endDate
+      })
+      
       sales = await SalesService.getSalesByDateRange(
-        new Date(startDate),
-        new Date(endDate)
+        new Date(validatedDates.startDate),
+        new Date(validatedDates.endDate)
       )
     } else {
       sales = await SalesService.getSales(limit)
@@ -39,6 +45,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sales })
   } catch (error) {
     console.error('Error in GET /api/sales:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Rango de fechas inválido', details: error.errors },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Error al obtener las ventas' },
       { status: 500 }

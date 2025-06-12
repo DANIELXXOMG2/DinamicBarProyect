@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Download, Search, Filter } from "lucide-react"
+import { Download, Search, Filter } from "lucide-react"
 import { toast } from "sonner"
 
 interface SaleItem {
   id: string
   productName: string
   quantity: number
-  price: number
-  total: number
+  unitPrice: number
+  totalPrice: number
 }
 
 interface Sale {
@@ -292,7 +292,7 @@ export default function SalesPage() {
                             <span>
                               {item.quantity}x {item.productName}
                             </span>
-                            <span>${item.total.toFixed(2)}</span>
+                            <span>${item.totalPrice.toFixed(2)}</span>
                           </div>
                         ))}
                       </div>

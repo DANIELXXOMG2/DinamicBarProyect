@@ -7,10 +7,7 @@ import { Header } from "../../components/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Save, Upload, Store } from "lucide-react"
 import { toast } from "sonner"
 
@@ -112,6 +109,16 @@ export default function SettingsPage() {
     }
   }
 
+  // Función para manejar cambios en el teléfono (solo números)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Solo permitir números y algunos caracteres especiales como + - ()
+    const phoneRegex = /^[0-9+\-() ]*$/
+    if (value === '' || phoneRegex.test(value)) {
+      setStoreConfig({ ...storeConfig, phone: value })
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -155,8 +162,9 @@ export default function SettingsPage() {
                     <Label htmlFor="storePhone">Teléfono</Label>
                     <Input
                       id="storePhone"
+                      type="tel"
                       value={storeConfig.phone || ''}
-                      onChange={(e) => setStoreConfig({ ...storeConfig, phone: e.target.value })}
+                      onChange={handlePhoneChange}
                       placeholder="+1 234 567 8900"
                     />
                   </div>

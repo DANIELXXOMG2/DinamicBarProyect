@@ -1,14 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Minus, Plus, ShoppingCart, Package } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Package, PlusSquare } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
 
 interface ProductCardProps {
   id: string
   title: string
-  price: number
+  salePrice: number
   stock: number
   type: "Alc" | "NoAlc"
   image?: string
@@ -19,7 +19,7 @@ interface ProductCardProps {
 export function ProductCard({ 
   id, 
   title, 
-  price, 
+  salePrice, 
   stock, 
   type, 
   image, 
@@ -52,75 +52,93 @@ export function ProductCard({
   const isLowStock = stock > 0 && stock <= 5
 
   return (
-    <div className={`flex items-center p-3 border rounded-lg hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-500 transition-all duration-200 ${
+    <div className={`flex flex-col p-4 border rounded-lg hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-500 transition-all duration-200 h-full ${
       isOutOfStock ? 'opacity-50 bg-gray-100' : ''
     }`}>
-      {/* Imagen del producto */}
-      <div className="w-16 h-16 mr-3 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
-        {image && !imageError ? (
-          <Image
-            src={image}
-            alt={title}
-            width={64}
-            height={64}
-            className="w-full h-full object-cover"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="h-6 w-6 text-gray-400" />
-          </div>
-        )}
-      </div>
-
-      {/* Información del producto */}
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-          <div className="flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${
-              type === "Alc" ? "bg-red-500" : "bg-green-500"
-            }`}></span>
-            <span className="text-xs text-gray-500">{type}</span>
-          </div>
+      <div className="flex items-start mb-3">
+        {/* Imagen del producto */}
+        <div className="w-16 h-16 mr-3 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+          {image && !imageError ? (
+            <Image
+              src={image}
+              alt={title}
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Package className="h-6 w-6 text-gray-400" />
+            </div>
+          )}
         </div>
-        
-        <div className="flex justify-between items-center">
-          <span className="text-green-600 font-bold text-lg">${price.toFixed(2)}</span>
-          <div className="flex items-center gap-2">
-            <span className={`text-xs ${
-              isOutOfStock ? 'text-red-500' : isLowStock ? 'text-orange-500' : 'text-gray-500'
-            }`}>
-              Stock: {stock}
-              {isOutOfStock && ' (Agotado)'}
-              {isLowStock && !isOutOfStock && ' (Poco stock)'}
-            </span>
+
+        {/* Información del producto */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+            <div className="flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-full ${
+                type === "Alc" ? "bg-red-500" : "bg-green-500"
+              }`}></span>
+              <span className="text-xs text-gray-500">{type}</span>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-green-600 font-bold text-lg">${salePrice.toFixed(2)}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs ${
+                isOutOfStock ? 'text-red-500' : isLowStock ? 'text-orange-500' : 'text-gray-500'
+              }`}>
+                Stock: {stock}
+                {isOutOfStock && ' (Agotado)'}
+                {isLowStock && !isOutOfStock && ' (Poco)'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Controles de cantidad y agregar */}
-      <div className="flex items-center gap-2 ml-4">
+      <div className="flex items-center justify-between mt-auto">
         {/* Selector de cantidad */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6 rounded-full"
+            className="h-9 w-9 rounded-full"
             onClick={handleRemove}
             disabled={quantity <= 1 || isOutOfStock}
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium w-6 text-center">{quantity}</span>
           <Button
             variant="outline"
             size="icon"
-            className="h-6 w-6 rounded-full"
+            className="h-9 w-9 rounded-full"
             onClick={handleAdd}
             disabled={stock <= quantity || isOutOfStock}
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={() => {
+              if (stock >= quantity + 2) {
+                setQuantity(quantity + 2);
+              } else if (stock > quantity) {
+                setQuantity(stock);
+              }
+            }}
+            disabled={stock <= quantity || isOutOfStock}
+            title="Añadir dos unidades"
+          >
+            <PlusSquare className="h-4 w-4" />
           </Button>
         </div>
 
@@ -128,10 +146,10 @@ export function ProductCard({
         <Button
           onClick={handleAddToTable}
           disabled={!canAddToTable || isOutOfStock || stock < quantity}
-          className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white"
+          className="h-9 px-3 bg-blue-500 hover:bg-blue-600 text-white"
           size="sm"
         >
-          <ShoppingCart className="h-3 w-3 mr-1" />
+          <ShoppingCart className="h-4 w-4 mr-1" />
           Agregar
         </Button>
       </div>

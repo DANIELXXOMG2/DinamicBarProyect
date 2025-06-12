@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 interface Product {
   id: string
   name: string
-  price: number
+  salePrice: number
   stock: number
   type: "ALCOHOLIC" | "NON_ALCOHOLIC"
+  image?: string
   category: {
     name: string
   }
@@ -85,7 +86,7 @@ export function DrinksList({ category = "Cervezas", onProductsLoad }: DrinksList
         <CompactItemCard
           key={product.id}
           title={product.name}
-          price={product.price}
+          price={product.salePrice}
           stock={product.stock}
           type={product.type === "ALCOHOLIC" ? "Alc" : "NoAlc"}
         />

@@ -9,7 +9,6 @@ export interface AddItemToTabData {
   tabId: string
   productId: string
   quantity: number
-  price: number
 }
 
 export interface UpdateTabItemData {
@@ -239,7 +238,13 @@ export class TabsService {
     try {
       const tab = await prisma.tab.findUnique({
         where: { id: tabId },
-        include: { items: true }
+        include: { 
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
       })
 
       if (!tab) {
@@ -247,7 +252,7 @@ export class TabsService {
       }
 
       const subtotal = tab.items.reduce((sum, item) => {
-        return sum + (item.price * item.quantity)
+        return sum + (item.product.salePrice * item.quantity)
       }, 0)
 
       const total = subtotal

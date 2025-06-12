@@ -8,7 +8,7 @@ const cancelSaleSchema = z.object({
 
 // GET /api/sales/[id] - Obtener venta específica
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

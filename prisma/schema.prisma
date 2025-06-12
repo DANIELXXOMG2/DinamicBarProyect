@@ -58,9 +58,10 @@ model Category {
 model Product {
   id          String    @id @default(cuid())
   name        String
-  price       Float
+  purchasePrice Float   // Precio de compra
+  salePrice   Float     // Precio de venta al público
   stock       Int       @default(0)
-  minStock    Int?      @default(5)
+  minStock    Int?      @default(20)
   type        ProductType @default(NON_ALCOHOLIC)
   image       String?
   categoryId  String
@@ -91,7 +92,6 @@ model Tab {
 model TabItem {
   id          String   @id @default(cuid())
   quantity    Int      @default(1)
-  price       Float
   tabId       String
   productId   String
   tab         Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
@@ -187,4 +187,31 @@ enum TransactionType {
   EXPENSE   // Salida de dinero
   OPENING   // Apertura de caja
   CLOSING   // Cierre de caja
+}
+
+// Modelo para pagos
+model Payment {
+  id          String        @id @default(cuid())
+  tabId       String        
+  amount      Float
+  method      String        // Método de pago (cash, card, etc.)
+  date        DateTime      @default(now())
+  isPartial   Boolean       @default(false) // Indica si es un pago parcial
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+// Modelo para transacciones generales
+model Transaction {
+  id            String        @id @default(cuid())
+  type          String        // Tipo de transacción (PAYMENT, REFUND, etc.)
+  amount        Float
+  paymentMethod String        // Método de pago utilizado
+  description   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("transactions")
 }

@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { CashRegister, CashTransaction, TransactionType, PaymentMethod } from '@prisma/client'
+import { CashRegister, CashTransaction, TransactionType } from '@prisma/client'
 
 export interface OpenCashRegisterData {
   openingAmount: number

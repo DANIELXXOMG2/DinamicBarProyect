@@ -12,9 +12,36 @@ const createUserSchema = z.object({
   role: UserRole
 })
 
+// Función auxiliar para verificar si el usuario es administrador
+const verifyAdminRole = async (request: NextRequest): Promise<boolean> => {
+  const userHeader = request.headers.get('x-user')
+  let user = null
+
+  if (userHeader) {
+    try {
+      user = JSON.parse(userHeader)
+      return user?.role === 'ADMIN'
+    } catch (error) {
+      return false
+    }
+  }
+
+  // Si no hay encabezado, intentar con localStorage (desde el middleware)
+  return false
+}
+
 // GET /api/users - Obtener todos los usuarios
 export async function GET(request: NextRequest) {
   try {
+    // Verificar si el usuario es administrador
+    const isAdmin = await verifyAdminRole(request)
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Solo los administradores pueden ver la lista de usuarios' },
+        { status: 403 }
+      )
+    }
+
     const users = await AuthService.getUsers()
     return NextResponse.json({ users })
   } catch (error) {
@@ -29,6 +56,15 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Crear un nuevo usuario
 export async function POST(request: NextRequest) {
   try {
+    // Verificar si el usuario es administrador
+    const isAdmin = await verifyAdminRole(request)
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Solo los administradores pueden crear usuarios' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const validatedData = createUserSchema.parse(body)
     

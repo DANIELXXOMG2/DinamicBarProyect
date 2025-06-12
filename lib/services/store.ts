@@ -4,14 +4,14 @@ import { Store } from '@prisma/client'
 export interface CreateStoreData {
   name: string
   phone?: string
-  image?: string
+  image?: string | null
   address?: string
 }
 
 export interface UpdateStoreData {
   name?: string
   phone?: string
-  image?: string
+  image?: string | null
   address?: string
 }
 

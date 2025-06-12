@@ -14,6 +14,29 @@ export default function ProductsPage() {
   const [selectedTableName, setSelectedTableName] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [showTableSelector, setShowTableSelector] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Verificar autenticación
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    console.log("🔍 Verificando autenticación en página de productos")
+    
+    if (!storedUser) {
+      console.log("🚫 No hay usuario en localStorage, redirigiendo a login")
+      window.location.href = '/login'
+      return
+    }
+    
+    try {
+      const user = JSON.parse(storedUser)
+      console.log("✅ Usuario autenticado:", user)
+      setIsLoading(false)
+    } catch (error) {
+      console.error("❌ Error al procesar usuario:", error)
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+  }, [])
 
   // Atajos de teclado
   useEffect(() => {
@@ -57,6 +80,18 @@ export default function ProductsPage() {
     setSearchQuery(query)
   }
 
+  // Si está cargando, mostrar indicador
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header />
@@ -71,7 +106,7 @@ export default function ProductsPage() {
           />
           
           {/* Selector de mesa */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center mb-4 gap-2">
             <button
               onClick={() => setShowTableSelector(true)}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"

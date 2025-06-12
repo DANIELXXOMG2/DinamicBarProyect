@@ -1,5 +1,4 @@
 import { Beer, Wine, Sandwich, Coffee, Package, Cigarette, Wrench } from "lucide-react"
-import { useState, useEffect } from "react"
 
 interface DrinkCategoriesProps {
   activeCategory: string

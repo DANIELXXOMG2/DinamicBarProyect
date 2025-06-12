@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { Sale, SaleItem, PaymentMethod, Tab, TabItem, Product } from '@prisma/client'
+import { Sale, SaleItem, PaymentMethod } from '@prisma/client'
 import { CashRegisterService } from './cash-register'
 import { TabsService } from './tabs'
 
@@ -96,8 +96,8 @@ export class SalesService {
                 productId: item.productId,
                 productName: item.product.name,
                 quantity: item.quantity,
-                unitPrice: item.price,
-                totalPrice: item.price * item.quantity
+                unitPrice: item.product.salePrice,
+        totalPrice: item.product.salePrice * item.quantity
               }
             })
           )

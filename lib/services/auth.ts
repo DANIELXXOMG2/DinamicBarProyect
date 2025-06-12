@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import * as crypto from 'crypto'
+import { UserRole } from '@prisma/client'
 
-// Definiciones de tipo locales para evitar problemas de importación
-type UserRole = 'ADMIN' | 'CASHIER' | 'WAITER'
-
+// Definiciones de tipo locales
 interface User {
   id: string
   username: string
@@ -49,24 +48,39 @@ export class AuthService {
   // Iniciar sesión
   static async login(username: string, password: string): Promise<LoginResponse> {
     try {
+      console.log(`🔍 Intentando login para usuario: ${username}`)
+      
+      // Usar Prisma Client
       const user = await prisma.user.findUnique({
-        where: { username }
+        where: {
+          username
+        }
       })
 
       if (!user) {
+        console.log(`❌ Usuario no encontrado: ${username}`)
         return {
           success: false,
           message: 'Usuario no encontrado',
-          user: { id: '', username: '', role: 'WAITER' }
+          user: { id: '', username: '', role: 'WAITER' as UserRole }
         }
       }
 
-      const passwordValid = this.verifyPassword(password, user.password)
+      console.log(`✓ Usuario encontrado: ${username}`)
+      console.log(`🔐 Contraseña proporcionada: ${password}`)
+      console.log(`🔐 Contraseña almacenada (hash): ${user.password}`)
+
+      const hashedInputPassword = this.hashPassword(password)
+      console.log(`🔐 Contraseña ingresada (hash): ${hashedInputPassword}`)
+      
+      const passwordValid = hashedInputPassword === user.password
+      console.log(`🔍 ¿Contraseñas coinciden?: ${passwordValid}`)
+
       if (!passwordValid) {
         return {
           success: false,
           message: 'Contraseña incorrecta',
-          user: { id: '', username: '', role: 'WAITER' }
+          user: { id: '', username: '', role: 'WAITER' as UserRole }
         }
       }
 
@@ -86,16 +100,20 @@ export class AuthService {
   // Crear un nuevo usuario
   static async createUser(data: CreateUserData): Promise<User> {
     try {
+      // Verificar si el usuario ya existe usando Prisma Client
       const existingUser = await prisma.user.findUnique({
-        where: { username: data.username }
+        where: {
+          username: data.username
+        }
       })
-
+      
       if (existingUser) {
         throw new Error('El nombre de usuario ya está en uso')
       }
 
       const hashedPassword = this.hashPassword(data.password)
 
+      // Crear nuevo usuario usando Prisma Client
       return await prisma.user.create({
         data: {
           username: data.username,
@@ -113,6 +131,7 @@ export class AuthService {
   static async getUsers(): Promise<Omit<User, 'password'>[]> {
     try {
       const users = await prisma.user.findMany()
+      
       return users.map(user => {
         const { password, ...userWithoutPassword } = user
         return userWithoutPassword
@@ -126,18 +145,28 @@ export class AuthService {
   // Actualizar usuario
   static async updateUser(id: string, data: UpdateUserData): Promise<Omit<User, 'password'>> {
     try {
-      // Si se actualiza la contraseña, hashearla
-      const updateData: any = { ...data }
+      const updateData: any = {}
+      
       if (data.password) {
         updateData.password = this.hashPassword(data.password)
       }
-
-      const user = await prisma.user.update({
+      
+      if (data.role) {
+        updateData.role = data.role
+      }
+      
+      // Si no hay nada que actualizar, lanzar error
+      if (Object.keys(updateData).length === 0) {
+        throw new Error('No se proporcionaron datos para actualizar')
+      }
+      
+      // Actualizar usuario usando Prisma Client
+      const updatedUser = await prisma.user.update({
         where: { id },
         data: updateData
       })
-
-      const { password, ...userWithoutPassword } = user
+      
+      const { password, ...userWithoutPassword } = updatedUser
       return userWithoutPassword
     } catch (error) {
       console.error('Error updating user:', error)

@@ -5,7 +5,7 @@ import { z } from 'zod'
 const storeSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   phone: z.string().optional(),
-  image: z.string().optional(),
+  image: z.string().nullable().optional(),
   address: z.string().optional()
 })
 

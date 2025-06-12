@@ -6,15 +6,14 @@ const updateTabSchema = z.object({
   name: z.string().min(1, 'El nombre de la mesa es requerido')
 })
 
-
-
 // GET /api/tabs/[id] - Obtener una mesa específica
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tab = await TabsService.getTab(params.id)
+    const { id } = await params
+    const tab = await TabsService.getTab(id)
     
     if (!tab) {
       return NextResponse.json(
@@ -38,13 +37,14 @@ export async function GET(
 // PATCH /api/tabs/[id] - Actualizar mesa
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { name } = updateTabSchema.parse(body)
     
-    const tab = await TabsService.updateTab(params.id, { name })
+    const tab = await TabsService.updateTab(id, { name })
     return NextResponse.json({ tab })
   } catch (error) {
     console.error('Error in PATCH /api/tabs/[id]:', error)
@@ -66,10 +66,11 @@ export async function PATCH(
 // DELETE /api/tabs/[id] - Cerrar mesa
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tab = await TabsService.closeTab(params.id)
+    const { id } = await params
+    const tab = await TabsService.closeTab(id)
     return NextResponse.json({ tab, message: 'Mesa cerrada correctamente' })
   } catch (error) {
     console.error('Error in DELETE /api/tabs/[id]:', error)
