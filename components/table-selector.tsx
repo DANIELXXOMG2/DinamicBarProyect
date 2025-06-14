@@ -207,19 +207,19 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
               No hay mesas disponibles. Crea una nueva mesa.
             </div>
           ) : (
-            <div className="grid gap-2 max-h-60 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
               {tables.map((table) => (
                 <div
                   key={table.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex flex-col p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex-1">
+                  <div className="space-y-2">
                     {editingTable === table.id ? (
                       <div className="flex items-center gap-2">
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="h-8"
+                          className="h-8 flex-1"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               updateTableName(table.id, editName)
@@ -245,7 +245,7 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between">
                         <h4 className="font-medium">{table.name}</h4>
                         <Button
                           size="sm"
@@ -258,26 +258,29 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                    <div className="flex flex-col gap-1 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {formatTime(table.createdAt)}
                       </span>
-                      <span>{table.items?.length || 0} productos</span>
-                      <span className="font-medium text-green-600">
-                        ${table.total.toFixed(2)}
-                      </span>
+                      <div className="flex justify-between">
+                        <span>{table.items?.length || 0} productos</span>
+                        <span className="font-medium text-green-600">
+                          ${table.total.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
+                    
+                    {editingTable !== table.id && (
+                      <Button
+                        onClick={() => onSelect(table.id, table.name)}
+                        className="w-full mt-2"
+                        size="sm"
+                      >
+                        Seleccionar
+                      </Button>
+                    )}
                   </div>
-                  
-                  {editingTable !== table.id && (
-                    <Button
-                      onClick={() => onSelect(table.id, table.name)}
-                      className="ml-4"
-                    >
-                      Seleccionar
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>

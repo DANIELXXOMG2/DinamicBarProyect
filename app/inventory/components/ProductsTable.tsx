@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Product } from "../types/index"
-import { STOCK_THRESHOLDS } from "../constants"
 import { ProductUtils, FormatUtils } from "../utils"
 
 interface ProductsTableProps {

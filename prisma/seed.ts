@@ -1,4 +1,4 @@
-import { PrismaClient, ProductType, UserRole } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
 import { AuthService } from '@/lib/services/auth'
 import { generateProducts } from './seedProducts'
 
@@ -208,6 +208,21 @@ async function main() {
       })
     }
     console.timeEnd('Recálculo de totales')
+
+    // Crear proveedor de prueba
+    console.log('🏪 Creando proveedor de prueba...')
+    console.time('Creación de proveedor')
+    const testSupplier = await prisma.supplier.create({
+      data: {
+        name: 'Distribuidora Don Pepito el Chistoso',
+        phone: '+1 555-PEPITO',
+        email: 'donpepito@chistoso.com',
+        address: 'Calle de la Risa 123, Pueblo Alegre',
+        image: 'https://videos.openai.com/vg-assets/assets%2Ftask_01jxp1aryafryaaq2m4ygb1nxn%2F1749865084_img_2.webp?st=2025-06-14T00%3A08%3A54Z&se=2025-06-20T01%3A08%3A54Z&sks=b&skt=2025-06-14T00%3A08%3A54Z&ske=2025-06-20T01%3A08%3A54Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=aa5ddad1-c91a-4f0a-9aca-e20682cc8969&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=mSz0HNDLtgKFF4lMjsWPYgF01IWKvoWGfQOBwKIXTGI%3D&az=oaivgprodscus'
+      }
+    })
+    console.timeEnd('Creación de proveedor')
+    console.log('✅ Proveedor de prueba creado:', testSupplier.name)
 
     console.timeEnd('Tiempo total de seed')
     console.log('🎉 Seed completado exitosamente!')

@@ -7,7 +7,7 @@ export const PRODUCT_TYPES = {
 } as const
 
 export const IMAGE_CONFIG = {
-  ACCEPTED_TYPES: ["image/jpeg", "image/png", "image/webp"],
+  ACCEPTED_TYPES: ["image/jpeg", "image/png", "image/webp", "image/gif"] as const,
   MAX_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_TYPES: "image/*",
   PREVIEW_SIZE: {

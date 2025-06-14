@@ -3,7 +3,6 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ImageMethod } from "../types/index"
-import { IMAGE_CONFIG } from "../constants"
 import { ValidationUtils, ImageUtils } from "../utils"
 
 interface EditImageModalProps {

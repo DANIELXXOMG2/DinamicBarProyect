@@ -215,3 +215,72 @@ model Transaction {
 
   @@map("transactions")
 }
+
+// Modelo para proveedores
+model Supplier {
+  id          String    @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  purchases   Purchase[]
+
+  @@map("suppliers")
+}
+
+// Modelo para compras
+model Purchase {
+  id            String        @id @default(cuid())
+  date          DateTime      @default(now())
+  supplierId    String
+  supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  subtotal      Float
+  totalIva      Float         @default(0)
+  grandTotal    Float
+  paymentMethod String        @default("CASH")
+  companyImage  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         PurchaseItem[]
+
+  @@map("purchases")
+}
+
+// Modelo para items de compra
+model PurchaseItem {
+  id            String    @id @default(cuid())
+  purchaseId    String
+  purchase      Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId     String?
+  productName   String
+  quantity      Int
+  purchasePrice Float
+  salePrice     Float
+  iva           Float     @default(0)
+  total         Float
+  createdAt     DateTime  @default(now())
+
+  @@map("purchase_items")
+}
+
+// Modelo para comprobantes de ingresos y egresos
+model Voucher {
+  id          String      @id @default(cuid())
+  type        VoucherType
+  date        DateTime    @default(now())
+  amount      Float
+  description String
+  category    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("vouchers")
+}
+
+enum VoucherType {
+  INCOME
+  EXPENSE
+}

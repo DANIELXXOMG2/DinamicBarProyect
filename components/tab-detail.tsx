@@ -326,7 +326,7 @@ export function TabDetail({ tab, onUpdateQuantity, onCloseTab }: TabDetailProps)
               <div className="w-full sm:w-auto">
                 <CartItem
                   title={item.product.name}
-                  price={item.product.salePrice}
+                  salePrice={item.product.salePrice}
                   quantity={item.quantity}
                   image="/placeholder.svg?height=64&width=64"
                 />

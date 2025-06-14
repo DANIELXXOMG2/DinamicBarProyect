@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, AlertTriangle } from "lucide-react"
 import { Product } from "../types/index"
-import { STOCK_THRESHOLDS } from "../constants"
 import { ProductUtils, FormatUtils } from "../utils"
 
 interface InventoryStatsProps {

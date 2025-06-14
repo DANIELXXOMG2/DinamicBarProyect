@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { InventoryService } from '@/lib/services/inventory'
-import { ProductType } from '@prisma/client'
 import { z } from 'zod'
 
 const updateProductSchema = z.object({

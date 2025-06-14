@@ -136,7 +136,7 @@ export const ValidationUtils = {
     }
 
     // Validar tipo
-    if (!IMAGE_CONFIG.ALLOWED_TYPES.includes(file.type)) {
+    if (!IMAGE_CONFIG.ACCEPTED_TYPES.includes(file.type as typeof IMAGE_CONFIG.ACCEPTED_TYPES[number])) {
       return {
         isValid: false,
         error: 'Solo se permiten archivos de imagen (JPG, PNG, WebP, GIF).'

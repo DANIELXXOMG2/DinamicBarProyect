@@ -2,8 +2,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Category, NewProduct, ImageMethod, ProductType } from "../types/index"
-import { PRODUCT_TYPES, IMAGE_CONFIG, FORM_VALIDATION } from "../constants"
+import { Category, NewProduct, ImageMethod} from "../types/index"
 import { ValidationUtils, ImageUtils } from "../utils"
 
 interface AddProductFormProps {
@@ -134,10 +133,10 @@ export function AddProductForm({ categories, onAddProduct, saving }: AddProductF
             />
           </div>
 
-          {/* Stock inicial */}
+          {/* Unidades */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Stock inicial
+              Unidades
             </label>
             <Input
               type="number"
@@ -164,80 +163,84 @@ export function AddProductForm({ categories, onAddProduct, saving }: AddProductF
           </div>
         </div>
         
-        {/* Imagen del producto */}
-        <div className="mt-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Imagen del producto</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={imageMethod === 'url' ? 'default' : 'outline'}
-                onClick={() => setImageMethod('url')}
-                size="sm"
-              >
-                URL
-              </Button>
-              <Button
-                type="button"
-                variant={imageMethod === 'upload' ? 'default' : 'outline'}
-                onClick={() => setImageMethod('upload')}
-                size="sm"
-              >
-                Subir archivo
-              </Button>
+        {/* Imagen del producto y Botón de agregar */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sección de imagen - 50% del ancho */}
+          <div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Imagen del producto</label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={imageMethod === 'url' ? 'default' : 'outline'}
+                  onClick={() => setImageMethod('url')}
+                  size="sm"
+                >
+                  URL
+                </Button>
+                <Button
+                  type="button"
+                  variant={imageMethod === 'upload' ? 'default' : 'outline'}
+                  onClick={() => setImageMethod('upload')}
+                  size="sm"
+                >
+                  Subir archivo
+                </Button>
+              </div>
+              
+              {imageMethod === 'url' && (
+                <Input
+                  placeholder="URL de la imagen"
+                  value={newItem.image || ""}
+                  onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
+                />
+              )}
+              
+              {imageMethod === 'upload' && (
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {previewUrl && (
+                    <div className="mt-2">
+                      <img
+                        src={previewUrl}
+                        alt="Preview"
+                        className="w-20 h-20 object-cover rounded-md border"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {newItem.image && imageMethod === 'url' && (
+                <div className="mt-2">
+                  <img
+                    src={newItem.image}
+                    alt="Preview"
+                    className="w-20 h-20 object-cover rounded-md border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
             </div>
-            
-            {imageMethod === 'url' && (
-              <Input
-                placeholder="URL de la imagen"
-                value={newItem.image || ""}
-                onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
-              />
-            )}
-            
-            {imageMethod === 'upload' && (
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
-                {previewUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-20 h-20 object-cover rounded-md border"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {newItem.image && imageMethod === 'url' && (
-              <div className="mt-2">
-                <img
-                  src={newItem.image}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-md border"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              </div>
-            )}
           </div>
-        </div>
-        
-        <div className="mt-6 flex justify-end">
-          <Button 
-            onClick={handleSubmit} 
-            disabled={saving || !newItem.name || !newItem.categoryId || !newItem.purchasePrice || !newItem.salePrice}
-            className="px-6 py-2"
-          >
-            {saving ? "Agregando..." : "Agregar Producto"}
-          </Button>
+          
+          {/* Botón de agregar - 50% del ancho */}
+          <div className="flex items-end">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={saving || !newItem.name || !newItem.categoryId || !newItem.purchasePrice || !newItem.salePrice}
+              className="px-6 py-2 w-full md:w-auto"
+            >
+              {saving ? "Agregando..." : "Agregar Producto"}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
