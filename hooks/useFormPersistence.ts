@@ -16,6 +16,7 @@ export function useFormPersistence(formKey: string, initialState: FormState = {}
   const [formData, setFormData] = useState<FormState>(initialState)
   const [isExpired, setIsExpired] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState<number>(0)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Cargar datos persistidos al inicializar
   useEffect(() => {
@@ -38,6 +39,7 @@ export function useFormPersistence(formKey: string, initialState: FormState = {}
         localStorage.removeItem(`form_${formKey}`)
       }
     }
+    setIsLoaded(true)
   }, [formKey])
 
   // Actualizar contador de tiempo restante
@@ -136,7 +138,8 @@ export function useFormPersistence(formKey: string, initialState: FormState = {}
     isExpired,
     timeRemaining,
     formatTimeRemaining,
-    hasPendingData: hasPendingData()
+    hasPendingData,
+    isLoaded
   }
 }
 
@@ -147,7 +150,7 @@ export function useGlobalFormStatus() {
   useEffect(() => {
     const checkPendingForms = () => {
       const pending: string[] = []
-      const formKeys = ['income_voucher', 'expense_voucher', 'purchase']
+      const formKeys = ['income', 'expense', 'purchase']
       
       formKeys.forEach(key => {
         const savedData = localStorage.getItem(`form_${key}`)
@@ -171,8 +174,8 @@ export function useGlobalFormStatus() {
     // Verificar al cargar
     checkPendingForms()
 
-    // Verificar cada 30 segundos
-    const interval = setInterval(checkPendingForms, 30000)
+    // Verificar cada 5 segundos para mejor responsividad
+    const interval = setInterval(checkPendingForms, 5000)
 
     return () => clearInterval(interval)
   }, [])

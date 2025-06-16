@@ -12,6 +12,7 @@ interface Voucher {
   amount: number
   date: string
   time: string
+  category?: string
   createdAt: string
 }
 
@@ -27,34 +28,61 @@ export function VouchersList({ type }: VouchersListProps) {
   const bgColorClass = type === 'income' ? 'bg-green-50' : 'bg-red-50'
 
   useEffect(() => {
-    const loadVouchers = () => {
-      const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
-      setVouchers(stored.sort((a: Voucher, b: Voucher) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ))
+    const loadVouchers = async () => {
+      try {
+        const voucherType = type === 'income' ? 'INCOME' : 'EXPENSE'
+        const response = await fetch(`/api/vouchers?type=${voucherType}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          setVouchers(data.vouchers || [])
+        } else {
+          console.error('Error loading vouchers from API')
+          // Fallback a localStorage si la API falla
+          const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
+          setVouchers(stored.sort((a: Voucher, b: Voucher) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ))
+        }
+      } catch (error) {
+        console.error('Error loading vouchers:', error)
+        // Fallback a localStorage en caso de error
+        const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
+        setVouchers(stored.sort((a: Voucher, b: Voucher) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ))
+      }
     }
 
     loadVouchers()
+  }, [type, storageKey])
 
-    // Escuchar cambios en localStorage
-    const handleStorageChange = () => {
-      loadVouchers()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [storageKey])
-
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Está seguro de que desea eliminar este comprobante?')) {
-      const updatedVouchers = vouchers.filter(v => v.id !== id)
-      setVouchers(updatedVouchers)
-      localStorage.setItem(storageKey, JSON.stringify(updatedVouchers))
-      
-      toast({
-        title: "Éxito",
-        description: "Comprobante eliminado correctamente"
-      })
+      try {
+        const response = await fetch(`/api/vouchers/${id}`, {
+          method: 'DELETE'
+        })
+        
+        if (response.ok) {
+          const updatedVouchers = vouchers.filter(v => v.id !== id)
+          setVouchers(updatedVouchers)
+          
+          toast({
+            title: "Éxito",
+            description: "Comprobante eliminado correctamente"
+          })
+        } else {
+          throw new Error('Error al eliminar el comprobante')
+        }
+      } catch (error) {
+        console.error('Error deleting voucher:', error)
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el comprobante",
+          variant: "destructive"
+        })
+      }
     }
   }
 

@@ -68,43 +68,34 @@ export function SidebarNav() {
   useEffect(() => {
     const loadStoreConfig = async () => {
       try {
-        // Intentar cargar desde la API primero
         const response = await fetch('/api/store')
         if (response.ok) {
           const { store } = await response.json()
           if (store) {
             const config = {
-              name: store.name,
-              logo: store.image
+              name: store.name || 'Mi Restaurante',
+              logo: store.image || '/placeholder-logo.svg'
             }
             setStoreConfig(config)
-            // Sincronizar con localStorage
-            localStorage.setItem("storeConfig", JSON.stringify(config))
             return
           }
         }
       } catch (error) {
-        console.warn('Error loading store config from API, falling back to localStorage:', error)
-      }
-      
-      // Fallback a localStorage si la API falla
-      const savedConfig = localStorage.getItem("storeConfig")
-      if (savedConfig) {
-        setStoreConfig(JSON.parse(savedConfig))
+        console.warn('Error loading store config from API:', error)
+        // Usar configuración por defecto si la API falla
+        setStoreConfig({
+          name: 'Mi Restaurante',
+          logo: '/placeholder-logo.svg'
+        })
       }
     }
 
     // Cargar configuración inicial
     loadStoreConfig()
 
-    // Escuchar cambios en localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "storeConfig") {
-        const savedConfig = localStorage.getItem("storeConfig")
-        if (savedConfig) {
-          setStoreConfig(JSON.parse(savedConfig))
-        }
-      }
+    // Función para recargar configuración desde la API
+    const reloadStoreConfig = () => {
+      loadStoreConfig()
     }
 
     // Escuchar evento personalizado para cambios internos
@@ -112,11 +103,9 @@ export function SidebarNav() {
       loadStoreConfig()
     }
 
-    window.addEventListener('storage', handleStorageChange)
     window.addEventListener('storeConfigUpdated', handleConfigUpdate)
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('storeConfigUpdated', handleConfigUpdate)
     }
   }, [])
@@ -316,13 +305,13 @@ export function SidebarNav() {
                     )}
                   </div>
                   <div className="flex items-center space-x-2 text-xs">
-                    {pendingForms.includes('income_voucher') && (
+                    {pendingForms.includes('income') && (
                       <div className="flex items-center space-x-1 text-green-600">
                         <TrendingUp className="h-3 w-3" />
                         <span>Ingreso</span>
                       </div>
                     )}
-                    {pendingForms.includes('expense_voucher') && (
+                    {pendingForms.includes('expense') && (
                       <div className="flex items-center space-x-1 text-red-600">
                         <TrendingDown className="h-3 w-3" />
                         <span>Egreso</span>

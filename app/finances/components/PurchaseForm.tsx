@@ -6,56 +6,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { X, Save, Plus, Trash2, Package } from "lucide-react"
+import { X, Save, Plus, Trash2, Package, ImagePlus } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { useFormPersistence } from "@/hooks/useFormPersistence"
+import { PurchaseItem, Purchase, Product, Supplier } from "../types/purchase"
 
 interface PurchaseFormProps {
   onClose: () => void
-}
-
-interface Product {
-  id: string
-  name: string
-  image?: string
-}
-
-interface Supplier {
-  id: string
-  name: string
-}
-
-interface PurchaseItem {
-  productId: string
-  productName: string
-  productImage?: string
-  quantity: number
-  purchasePrice: number
-  salePrice: number
-  iva?: number
-  total: number
-}
-
-interface Purchase {
-  id: string
-  date: string
-  time: string
-  supplierId: string
-  supplierName: string
-  companyImage?: string
-  items: PurchaseItem[]
-  subtotal: number
-  totalIva: number
-  grandTotal: number
-  createdAt: string
 }
 
 export function PurchaseForm({ onClose }: PurchaseFormProps) {
   const [purchase, setPurchase] = useState({
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
-    supplierId: "",
-    companyImage: ""
+    supplierId: ""
   })
   const [products, setProducts] = useState<Product[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -70,12 +34,22 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
   const [saving, setSaving] = useState(false)
   const [showNewProductForm, setShowNewProductForm] = useState(false)
   const [newProduct, setNewProduct] = useState({ name: "", image: "" })
+  const [showNewSupplierForm, setShowNewSupplierForm] = useState(false)
+  const [newSupplier, setNewSupplier] = useState({ 
+    name: "", 
+    phone: "", 
+    image: "", 
+    nit: "", 
+    address: "" 
+  })
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   // Hook de persistencia de formularios
   const {
     saveFormData,
     loadFormData,
-    clearFormData
+    clearFormData,
+    isLoaded
   } = useFormPersistence('purchase')
 
   // Cargar datos persistidos al montar el componente
@@ -87,6 +61,8 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
       setCurrentItem(savedData.currentItem || currentItem)
       setNewProduct(savedData.newProduct || newProduct)
       setShowNewProductForm(savedData.showNewProductForm || false)
+      setNewSupplier(savedData.newSupplier || newSupplier)
+      setShowNewSupplierForm(savedData.showNewSupplierForm || false)
       
       toast({
         title: "Datos recuperados",
@@ -95,27 +71,53 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
     }
   }, [])
 
-  // Guardar datos automáticamente cuando cambien
+  // Guardar datos automáticamente cuando cambien (solo después de cargar)
   useEffect(() => {
-    const formData = {
-      purchase,
-      items,
-      currentItem,
-      newProduct,
-      showNewProductForm
+    if (isLoaded && (purchase.supplierId || items.length > 0 || currentItem.productId || newProduct.name || newSupplier.name)) {
+      const formData = {
+        purchase,
+        items,
+        currentItem,
+        newProduct,
+        showNewProductForm,
+        newSupplier,
+        showNewSupplierForm
+      }
+      saveFormData(formData)
     }
-    saveFormData(formData)
-  }, [purchase, items, currentItem, newProduct, showNewProductForm, saveFormData])
+  }, [purchase, items, currentItem, newProduct, showNewProductForm, newSupplier, showNewSupplierForm, saveFormData, isLoaded])
 
-  // Cargar productos y proveedores
+  // Cargar productos y proveedores desde las APIs
   useEffect(() => {
-    const storedProducts = JSON.parse(localStorage.getItem('products') || '[]')
-    const storedSuppliers = JSON.parse(localStorage.getItem('suppliers') || '[]')
-    setProducts(storedProducts)
-    setSuppliers(storedSuppliers)
+    const loadData = async () => {
+      try {
+        // Cargar productos
+        const productsResponse = await fetch('/api/products')
+        if (productsResponse.ok) {
+          const productsData = await productsResponse.json()
+          setProducts(productsData.products || [])
+        }
+
+        // Cargar proveedores
+        const suppliersResponse = await fetch('/api/suppliers')
+        if (suppliersResponse.ok) {
+          const suppliersData = await suppliersResponse.json()
+          setSuppliers(suppliersData.suppliers || [])
+        }
+      } catch (error) {
+        console.error('Error loading data:', error)
+        // Fallback a localStorage en caso de error
+        const storedProducts = JSON.parse(localStorage.getItem('products') || '[]')
+        const storedSuppliers = JSON.parse(localStorage.getItem('suppliers') || '[]')
+        setProducts(storedProducts)
+        setSuppliers(storedSuppliers)
+      }
+    }
+
+    loadData()
   }, [])
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name.trim()) {
       toast({
         title: "Error",
@@ -131,9 +133,34 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
       image: newProduct.image || undefined
     }
 
-    const updatedProducts = [...products, product]
-    setProducts(updatedProducts)
-    localStorage.setItem('products', JSON.stringify(updatedProducts))
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: product.name,
+          image: product.image
+        })
+      })
+
+      if (response.ok) {
+        const { product: createdProduct } = await response.json()
+        const updatedProducts = [...products, createdProduct]
+        setProducts(updatedProducts)
+        setCurrentItem({ ...currentItem, productId: createdProduct.id })
+      } else {
+        throw new Error('Error creating product')
+      }
+    } catch (error) {
+      console.error('Error creating product:', error)
+      // Fallback a localStorage
+      const updatedProducts = [...products, product]
+      setProducts(updatedProducts)
+      localStorage.setItem('products', JSON.stringify(updatedProducts))
+      setCurrentItem({ ...currentItem, productId: product.id })
+    }
     
     setCurrentItem({ ...currentItem, productId: product.id })
     setNewProduct({ name: "", image: "" })
@@ -143,6 +170,104 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
       title: "Éxito",
       description: "Producto creado correctamente"
     })
+  }
+
+  const handleAddSupplier = async () => {
+    if (!newSupplier.name.trim()) {
+      toast({
+        title: "Error",
+        description: "El nombre del proveedor es requerido",
+        variant: "destructive"
+      })
+      return
+    }
+
+
+
+    const supplier: Supplier = {
+      id: Date.now().toString(),
+      name: newSupplier.name,
+      phone: newSupplier.phone || undefined,
+      nit: newSupplier.nit || undefined,
+      address: newSupplier.address || undefined
+    }
+
+    try {
+      const response = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: supplier.name,
+          phone: supplier.phone,
+          nit: supplier.nit,
+          address: supplier.address
+        })
+      })
+
+      if (response.ok) {
+        const { supplier: createdSupplier } = await response.json()
+        const updatedSuppliers = [...suppliers, createdSupplier]
+        setSuppliers(updatedSuppliers)
+        setPurchase({ ...purchase, supplierId: createdSupplier.id })
+
+      } else {
+        throw new Error('Error creating supplier')
+      }
+    } catch (error) {
+      console.error('Error creating supplier:', error)
+      // Fallback a localStorage
+      const updatedSuppliers = [...suppliers, supplier]
+      setSuppliers(updatedSuppliers)
+      localStorage.setItem('suppliers', JSON.stringify(updatedSuppliers))
+      setPurchase({ ...purchase, supplierId: supplier.id })
+
+    }
+    
+    // Limpiar el estado del formulario
+    setNewSupplier({ name: "", phone: "", image: "", nit: "", address: "" })
+    setShowNewSupplierForm(false)
+    
+    toast({
+      title: "Éxito",
+      description: "Proveedor creado correctamente"
+    })
+  }
+
+  const handleSupplierChange = (supplierId: string) => {
+    setPurchase({ ...purchase, supplierId })
+  }
+
+  const handleCancel = () => {
+    if (cancelConfirm) {
+      // Segundo clic - confirmar cancelación
+      clearFormData()
+      setPurchase({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        supplierId: ""
+      })
+      setItems([])
+      setCurrentItem({
+        productId: "",
+        quantity: 1,
+        purchasePrice: 0,
+        salePrice: 0,
+        iva: 0
+      })
+      setNewProduct({ name: "", image: "" })
+      setShowNewProductForm(false)
+      setNewSupplier({ name: "", phone: "", image: "", nit: "", address: "" })
+      setShowNewSupplierForm(false)
+
+      setCancelConfirm(false)
+      onClose()
+    } else {
+      // Primer clic - activar confirmación
+      setCancelConfirm(true)
+      setTimeout(() => setCancelConfirm(false), 3000)
+    }
   }
 
   const handleAddItem = () => {
@@ -216,7 +341,6 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
         time: purchase.time,
         supplierId: purchase.supplierId,
         supplierName: supplier?.name || "",
-        companyImage: purchase.companyImage,
         items,
         subtotal,
         totalIva,
@@ -224,10 +348,26 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
         createdAt: new Date().toISOString()
       }
 
-      // Guardar en localStorage
-      const existingPurchases = JSON.parse(localStorage.getItem('purchases') || '[]')
-      existingPurchases.push(newPurchase)
-      localStorage.setItem('purchases', JSON.stringify(existingPurchases))
+      // Guardar en la API
+      try {
+        const response = await fetch('/api/purchases', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(newPurchase)
+        })
+
+        if (!response.ok) {
+          throw new Error('Error saving to API')
+        }
+      } catch (apiError) {
+        console.error('Error saving to API, falling back to localStorage:', apiError)
+        // Fallback a localStorage
+        const existingPurchases = JSON.parse(localStorage.getItem('purchases') || '[]')
+        existingPurchases.push(newPurchase)
+        localStorage.setItem('purchases', JSON.stringify(existingPurchases))
+      }
 
       // Limpiar datos persistidos después del éxito
       clearFormData()
@@ -260,7 +400,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
 
       <div className="space-y-4">
         {/* Fecha, Hora y Proveedor */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <Label htmlFor="date">Fecha *</Label>
             <Input
@@ -281,44 +421,33 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
           </div>
           <div>
             <Label htmlFor="supplier">Proveedor *</Label>
-            <Select value={purchase.supplierId} onValueChange={(value) => setPurchase({ ...purchase, supplierId: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar proveedor" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1">
+              <Select value={purchase.supplierId} onValueChange={handleSupplierChange}>
+                <SelectTrigger className="flex-1 min-w-0">
+                  <SelectValue placeholder="Seleccionar proveedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowNewSupplierForm(true)}
+                className="px-2 py-1 h-8 w-8 flex-shrink-0"
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Imagen de la empresa */}
-        <div>
-          <Label htmlFor="companyImage">Foto de la Empresa (Opcional)</Label>
-          <Input
-            id="companyImage"
-            type="url"
-            placeholder="URL de la imagen de la empresa"
-            value={purchase.companyImage}
-            onChange={(e) => setPurchase({ ...purchase, companyImage: e.target.value })}
-          />
-          {purchase.companyImage && (
-            <div className="mt-2">
-              <img
-                src={purchase.companyImage}
-                alt="Empresa"
-                className="w-32 h-32 object-cover rounded-md border"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                }}
-              />
-            </div>
-          )}
-        </div>
+
 
         {/* Agregar Producto */}
         <Card>
@@ -371,11 +500,17 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                 />
-                <Input
-                  placeholder="URL de la imagen (opcional)"
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="URL de la imagen (opcional)"
+                    value={newProduct.image}
+                    onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                    className="pr-10"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <Package className="w-4 h-4" />
+                  </div>
+                </div>
                 <Button size="sm" onClick={handleAddProduct}>
                   Crear Producto
                 </Button>
@@ -512,11 +647,162 @@ export function PurchaseForm({ onClose }: PurchaseFormProps) {
             <Save className="w-4 h-4 mr-2" />
             {saving ? "Guardando..." : "Registrar Compra"}
           </Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            className={`transition-all duration-300 ${
+              cancelConfirm 
+                ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse' 
+                : 'hover:bg-gray-100'
+            }`}
+          >
+            {cancelConfirm ? 'Confirmar Cancelar' : 'Cancelar'}
           </Button>
         </div>
       </div>
+
+      {/* Modal para crear nuevo proveedor */}
+      {showNewSupplierForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Nuevo Proveedor</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setShowNewSupplierForm(false)
+                  setNewSupplier({ name: "", phone: "", image: "", nit: "", address: "" })
+
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Imagen del proveedor en la esquina superior izquierda */}
+              <div className="flex items-start space-x-4">
+                <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 flex-shrink-0">
+                  {newSupplier.image ? (
+                    <img
+                      src={newSupplier.image}
+                      alt="Proveedor"
+                      className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <Package className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="supplierImage">Foto de la Empresa</Label>
+                  <div className="relative">
+                    <Input
+                      id="supplierImage"
+                      type="url"
+                      placeholder="URL de la imagen o selecciona un archivo"
+                      value={newSupplier.image}
+                      onChange={(e) => setNewSupplier({ ...newSupplier, image: e.target.value })}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                      onClick={() => document.getElementById('supplierImageFile')?.click()}
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <input
+                      id="supplierImageFile"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const reader = new FileReader()
+                          reader.onload = (event) => {
+                            const result = event.target?.result as string
+                            setNewSupplier({ ...newSupplier, image: result })
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Campos del proveedor */}
+              <div>
+                <Label htmlFor="supplierName">Nombre *</Label>
+                <Input
+                  id="supplierName"
+                  placeholder="Nombre del proveedor"
+                  value={newSupplier.name}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="supplierPhone">Teléfono</Label>
+                <Input
+                  id="supplierPhone"
+                  placeholder="Número de teléfono"
+                  value={newSupplier.phone}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="supplierNit">NIT</Label>
+                <Input
+                  id="supplierNit"
+                  placeholder="Número de identificación tributaria"
+                  value={newSupplier.nit}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, nit: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="supplierAddress">Dirección</Label>
+                <Input
+                  id="supplierAddress"
+                  placeholder="Dirección del proveedor"
+                  value={newSupplier.address}
+                  onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
+                />
+              </div>
+              
+              {/* Botones del modal */}
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  onClick={handleAddSupplier}
+                  disabled={!newSupplier.name.trim()}
+                  className="flex-1"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Crear Proveedor
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowNewSupplierForm(false)
+                    setNewSupplier({ name: "", phone: "", image: "", nit: "", address: "" })
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

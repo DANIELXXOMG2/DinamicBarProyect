@@ -30,13 +30,14 @@ export function IncomeVoucherForm({ onClose }: IncomeVoucherFormProps) {
     time: new Date().toTimeString().slice(0, 5)
   })
   const [saving, setSaving] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   // Hook de persistencia de formularios
   const {
     saveFormData,
     loadFormData,
     clearFormData,
-    hasPendingData
+    isLoaded
   } = useFormPersistence('income')
 
   // Cargar datos persistidos al montar el componente
@@ -52,11 +53,31 @@ export function IncomeVoucherForm({ onClose }: IncomeVoucherFormProps) {
     }
   }, [])
 
-  // Guardar datos automáticamente cuando cambien
+  // Guardar datos automáticamente cuando cambien (solo después de cargar)
   useEffect(() => {
-    const formData = { voucher }
-    saveFormData(formData)
-  }, [voucher, saveFormData])
+    if (isLoaded && (voucher.description || voucher.amount > 0)) {
+      const formData = { voucher }
+      saveFormData(formData)
+    }
+  }, [voucher, saveFormData, isLoaded])
+
+  const handleCancel = () => {
+    if (cancelConfirm) {
+      // Segundo clic - confirmar cancelación
+      clearFormData()
+      setVoucher({
+        description: "",
+        amount: 0,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5)
+      })
+      onClose()
+    } else {
+      // Primer clic - activar confirmación
+      setCancelConfirm(true)
+      setTimeout(() => setCancelConfirm(false), 3000)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!voucher.description.trim() || voucher.amount <= 0) {
@@ -71,19 +92,23 @@ export function IncomeVoucherForm({ onClose }: IncomeVoucherFormProps) {
     setSaving(true)
     
     try {
-      const newVoucher: IncomeVoucher = {
-        id: Date.now().toString(),
-        description: voucher.description,
-        amount: voucher.amount,
-        date: voucher.date,
-        time: voucher.time,
-        createdAt: new Date().toISOString()
-      }
+      // Guardar usando la API
+      const response = await fetch('/api/vouchers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'INCOME',
+          amount: voucher.amount,
+          description: voucher.description,
+          date: `${voucher.date}T${voucher.time}:00.000Z`
+        })
+      })
 
-      // Guardar en localStorage
-      const existingVouchers = JSON.parse(localStorage.getItem('income_vouchers') || '[]')
-      existingVouchers.push(newVoucher)
-      localStorage.setItem('income_vouchers', JSON.stringify(existingVouchers))
+      if (!response.ok) {
+        throw new Error('Error al crear el comprobante')
+      }
 
       // Limpiar datos persistidos después del éxito
       clearFormData()
@@ -173,8 +198,12 @@ export function IncomeVoucherForm({ onClose }: IncomeVoucherFormProps) {
             <Save className="w-4 h-4 mr-2" />
             {saving ? "Guardando..." : "Guardar Comprobante"}
           </Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
+          <Button 
+            variant={cancelConfirm ? "destructive" : "outline"} 
+            onClick={handleCancel}
+            className={cancelConfirm ? "animate-pulse" : ""}
+          >
+            {cancelConfirm ? "¿Confirmar cancelar?" : "Cancelar"}
           </Button>
         </div>
       </div>

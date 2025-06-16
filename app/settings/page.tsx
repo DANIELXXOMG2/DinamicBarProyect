@@ -57,8 +57,6 @@ export default function SettingsPage() {
     }
   }
 
-
-
   const handleSaveStoreConfig = async () => {
     try {
       setSaving(true)
@@ -73,13 +71,6 @@ export default function SettingsPage() {
       if (response.ok) {
         const { store } = await response.json()
         setStoreConfig(store)
-        
-        // Sincronizar con localStorage para el sidebar
-        const sidebarConfig = {
-          name: store.name,
-          logo: store.image
-        }
-        localStorage.setItem("storeConfig", JSON.stringify(sidebarConfig))
         
         // Disparar evento personalizado para notificar al sidebar
         window.dispatchEvent(new CustomEvent('storeConfigUpdated'))

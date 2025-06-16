@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-
-import { Plus, FileText, ShoppingCart, TrendingUp, TrendingDown, Minimize2, Maximize2, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Plus, ShoppingCart, TrendingUp, TrendingDown, ChevronLeft, X, Clock } from "lucide-react"
 import { IncomeVoucherForm } from "./components/IncomeVoucherForm"
 import { ExpenseVoucherForm } from "./components/ExpenseVoucherForm"
 import { PurchaseForm } from "./components/PurchaseForm"
@@ -12,8 +12,8 @@ import { VouchersList } from "./components/VouchersList"
 import { PurchasesList } from "./components/PurchasesList"
 import { initializeFinancesData } from "./utils/initializeData"
 import { toast } from "@/components/ui/use-toast"
+import { useGlobalFormStatus } from "@/hooks/useFormPersistence"
 
-type VoucherType = 'income' | 'expense'
 type FormType = 'income' | 'expense' | 'purchase' | null
 
 interface MinimizedState {
@@ -34,6 +34,9 @@ export default function FinancesPage() {
     logo: "",
   })
   const [uploadingImage, setUploadingImage] = useState(false)
+  
+  // Hook para verificar formularios pendientes
+  const { pendingForms } = useGlobalFormStatus()
 
   // Cargar configuración de la tienda e inicializar datos
   useEffect(() => {
@@ -47,46 +50,81 @@ export default function FinancesPage() {
     }
   }, [])
 
-  // Persistencia de formularios (1 hora)
+  // Restaurar estado del formulario activo al cargar
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (activeForm) {
-        const timestamp = Date.now()
-        localStorage.setItem('finances_form_state', JSON.stringify({
-          activeForm,
-          timestamp
-        }))
-      }
-    }
-
-    // Restaurar estado al cargar
     const savedState = localStorage.getItem('finances_form_state')
     if (savedState) {
-      const { activeForm: savedForm, timestamp } = JSON.parse(savedState)
-      const oneHour = 60 * 60 * 1000
-      if (Date.now() - timestamp < oneHour) {
-        setActiveForm(savedForm)
-      } else {
+      try {
+        const { activeForm: savedForm, timestamp } = JSON.parse(savedState)
+        if (Date.now() - timestamp < 60 * 60 * 1000) {
+          setActiveForm(savedForm)
+        } else {
+          localStorage.removeItem('finances_form_state')
+        }
+      } catch (error) {
         localStorage.removeItem('finances_form_state')
       }
     }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [activeForm])
+  }, [])
 
   const handleCloseForm = () => {
     setActiveForm(null)
-    localStorage.removeItem('finances_form_state')
+    // Guardar estado al cerrar
+    const timestamp = Date.now()
+    localStorage.setItem('finances_form_state', JSON.stringify({
+      activeForm: null,
+      timestamp
+    }))
   }
 
   const handleMinimizeForm = (formType: FormType) => {
     if (formType) {
       setMinimizedForms(prev => ({
         ...prev,
-        [formType]: !prev[formType]
+        [formType]: true
+      }))
+      setActiveForm(null)
+      // Guardar estado al minimizar
+      const timestamp = Date.now()
+      localStorage.setItem('finances_form_state', JSON.stringify({
+        activeForm: null,
+        timestamp
       }))
     }
+  }
+
+  const handleOpenForm = (formType: FormType) => {
+    setActiveForm(formType)
+    // Guardar estado al abrir
+    const timestamp = Date.now()
+    localStorage.setItem('finances_form_state', JSON.stringify({
+      activeForm: formType,
+      timestamp
+    }))
+  }
+
+  // Función para verificar si un formulario tiene datos pendientes
+  const hasFormPendingData = (formType: string) => {
+    return pendingForms.includes(formType)
+  }
+
+  // Función para obtener tiempo restante de un formulario
+  const getFormTimeRemaining = (formType: string) => {
+    const savedData = localStorage.getItem(`form_${formType}`)
+    if (!savedData) return null
+    
+    try {
+      const parsed = JSON.parse(savedData)
+      const remaining = parsed.expiresAt - Date.now()
+      if (remaining > 0) {
+        const minutes = Math.floor(remaining / (1000 * 60))
+        const seconds = Math.floor((remaining % (1000 * 60)) / 1000)
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      }
+    } catch (error) {
+      console.error('Error parsing form data:', error)
+    }
+    return null
   }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,89 +205,139 @@ export default function FinancesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex">
+      {/* Barra lateral de pestañas minimizadas */}
+      {(minimizedForms.income || minimizedForms.expense || minimizedForms.purchase) && (
+        <div className="w-18 bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-300 shadow-md flex flex-col items-center py-4 px-2">
+          <div className="text-xs text-gray-600 text-center font-semibold mb-4 tracking-wide">Minimizados</div>
+          <div className="flex flex-col space-y-3 items-center gap-2">
+            {minimizedForms.income && (
+              <button
+                onClick={() => {
+                  setMinimizedForms(prev => ({ ...prev, income: false }))
+                  handleOpenForm('income')
+                }}
+                className={`w-20 h-16 ${hasFormPendingData('income') ? 'bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border-orange-400' : 'bg-gradient-to-b from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-green-400'} text-white rounded-lg text-xs font-medium flex items-center justify-center transform -rotate-90 whitespace-nowrap shadow-md transition-all duration-300 hover:shadow-lg border relative`}
+                title={hasFormPendingData('income') ? 'Ingreso (Datos pendientes)' : 'Ingreso'}
+              >
+                {hasFormPendingData('income') && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse transform rotate-90"></div>
+                )}
+                Ingreso
+              </button>
+            )}
+            {minimizedForms.expense && (
+              <button
+                onClick={() => {
+                  setMinimizedForms(prev => ({ ...prev, expense: false }))
+                  handleOpenForm('expense')
+                }}
+                className={`w-20 h-16 ${hasFormPendingData('expense') ? 'bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border-orange-400' : 'bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 border-red-400'} text-white rounded-lg text-xs font-medium flex items-center justify-center transform -rotate-90 whitespace-nowrap shadow-md transition-all duration-300 hover:shadow-lg border relative`}
+                title={hasFormPendingData('expense') ? 'Egreso (Datos pendientes)' : 'Egreso'}
+              >
+                {hasFormPendingData('expense') && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse transform rotate-90"></div>
+                )}
+                Egreso
+              </button>
+            )}
+            {minimizedForms.purchase && (
+              <button
+                onClick={() => {
+                  setMinimizedForms(prev => ({ ...prev, purchase: false }))
+                  handleOpenForm('purchase')
+                }}
+                className={`w-20 h-16 ${hasFormPendingData('purchase') ? 'bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 border-orange-400' : 'bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-blue-400'} text-white rounded-lg text-xs font-medium flex items-center justify-center transform -rotate-90 whitespace-nowrap shadow-md transition-all duration-300 hover:shadow-lg border relative`}
+                title={hasFormPendingData('purchase') ? 'Compras (Datos pendientes)' : 'Compras'}
+              >
+                {hasFormPendingData('purchase') && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse transform rotate-90"></div>
+                )}
+                Compras
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      
+      <div className="flex-1 p-6 space-y-6">
       {/* Header con información de la empresa */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="relative group">
-            {storeConfig.logo ? (
-              <div className="relative">
-                <img 
-                  src={storeConfig.logo} 
-                  alt="Logo" 
-                  className="w-16 h-16 object-contain rounded-lg border"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            ) : (
-              <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors cursor-pointer">
-                <Plus className="w-8 h-8 text-gray-400" />
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={uploadingImage}
-            />
-            {uploadingImage && (
-              <div className="absolute inset-0 bg-white bg-opacity-75 rounded-lg flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-          </div>
+          {/* Solo mostrar la imagen del local sin lógica de cambio */}
+          {storeConfig.logo && (
+            <div className="w-16 h-16">
+              <img 
+                src={storeConfig.logo} 
+                alt="Logo del Local" 
+                className="w-16 h-16 object-contain rounded-lg border"
+              />
+            </div>
+          )}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               {storeConfig.name || "Sistema de Finanzas"}
             </h1>
             <p className="text-gray-600">Gestión de ingresos, egresos y compras</p>
-            {!storeConfig.logo && (
-              <p className="text-sm text-gray-500 mt-1">Haz clic en el + para agregar logo de empresa</p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Grid de tres columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Grid dinámico basado en componentes minimizados */}
+      <div className={`grid gap-6 ${
+        // Calcular el número de columnas activas
+        (() => {
+          const activeColumns = [
+            !minimizedForms.income,
+            !minimizedForms.expense,
+            !minimizedForms.purchase
+          ].filter(Boolean).length;
+          
+          if (activeColumns === 1) return 'grid-cols-1';
+          if (activeColumns === 2) return 'grid-cols-1 lg:grid-cols-2';
+          return 'grid-cols-1 lg:grid-cols-3';
+        })()
+      }`}>
         {/* Columna 1: Comprobantes de Ingreso */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5 text-green-600" />
-                  <span>Comprobantes de Ingreso</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {activeForm === 'income' && (
+        {!minimizedForms.income && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <span>Comprobantes de Ingreso</span>
+                    {hasFormPendingData('income') && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {getFormTimeRemaining('income')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleMinimizeForm('income')}
+                      className="hover:bg-gray-100 transition-colors duration-200"
+                      title="Minimizar Comprobantes de Ingreso"
                     >
-                      {minimizedForms.income ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                      <ChevronLeft className="w-4 h-4" />
                     </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={() => setActiveForm(activeForm === 'income' ? null : 'income')}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {activeForm === 'income' ? (
-                      <X className="w-4 h-4 mr-1" />
-                    ) : (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleOpenForm('income')}
+                      className="bg-green-600 hover:bg-green-700 relative"
+                    >
                       <Plus className="w-4 h-4 mr-1" />
-                    )}
-                    {activeForm === 'income' ? 'Cerrar' : 'Nuevo'}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            {(!minimizedForms.income || activeForm !== 'income') && (
+                      Nuevo
+                      {hasFormPendingData('income') && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                      )}
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 {activeForm === 'income' ? (
                   <IncomeVoucherForm onClose={handleCloseForm} />
@@ -257,45 +345,50 @@ export default function FinancesPage() {
                   <VouchersList type="income" />
                 )}
               </CardContent>
-            )}
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
 
         {/* Columna 2: Comprobantes de Egreso */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <TrendingDown className="w-5 h-5 text-red-600" />
-                  <span>Comprobantes de Egreso</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {activeForm === 'expense' && (
+        {!minimizedForms.expense && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <TrendingDown className="w-5 h-5 text-red-600" />
+                    <span>Comprobantes de Egreso</span>
+                    {hasFormPendingData('expense') && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {getFormTimeRemaining('expense')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleMinimizeForm('expense')}
+                      className="hover:bg-gray-100 transition-colors duration-200"
+                      title="Minimizar Comprobantes de Egreso"
                     >
-                      {minimizedForms.expense ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                      <ChevronLeft className="w-4 h-4" />
                     </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={() => setActiveForm(activeForm === 'expense' ? null : 'expense')}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    {activeForm === 'expense' ? (
-                      <X className="w-4 h-4 mr-1" />
-                    ) : (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleOpenForm('expense')}
+                      className="bg-red-600 hover:bg-red-700 relative"
+                    >
                       <Plus className="w-4 h-4 mr-1" />
-                    )}
-                    {activeForm === 'expense' ? 'Cerrar' : 'Nuevo'}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            {(!minimizedForms.expense || activeForm !== 'expense') && (
+                      Nuevo
+                      {hasFormPendingData('expense') && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                      )}
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 {activeForm === 'expense' ? (
                   <ExpenseVoucherForm onClose={handleCloseForm} />
@@ -303,45 +396,50 @@ export default function FinancesPage() {
                   <VouchersList type="expense" />
                 )}
               </CardContent>
-            )}
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
 
         {/* Columna 3: Compras */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ShoppingCart className="w-5 h-5 text-blue-600" />
-                  <span>Compras</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {activeForm === 'purchase' && (
+        {!minimizedForms.purchase && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ShoppingCart className="w-5 h-5 text-blue-600" />
+                    <span>Compras</span>
+                    {hasFormPendingData('purchase') && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {getFormTimeRemaining('purchase')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleMinimizeForm('purchase')}
+                      className="hover:bg-gray-100 transition-colors duration-200"
+                      title="Minimizar Compras"
                     >
-                      {minimizedForms.purchase ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                      <ChevronLeft className="w-4 h-4" />
                     </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={() => setActiveForm(activeForm === 'purchase' ? null : 'purchase')}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {activeForm === 'purchase' ? (
-                      <X className="w-4 h-4 mr-1" />
-                    ) : (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleOpenForm('purchase')}
+                      className="bg-blue-600 hover:bg-blue-700 relative"
+                    >
                       <Plus className="w-4 h-4 mr-1" />
-                    )}
-                    {activeForm === 'purchase' ? 'Cerrar' : 'Nueva'}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            {(!minimizedForms.purchase || activeForm !== 'purchase') && (
+                      Nueva
+                      {hasFormPendingData('purchase') && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                      )}
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 {activeForm === 'purchase' ? (
                   <PurchaseForm onClose={handleCloseForm} />
@@ -349,9 +447,10 @@ export default function FinancesPage() {
                   <PurchasesList />
                 )}
               </CardContent>
-            )}
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
+      </div>
       </div>
     </div>
   )

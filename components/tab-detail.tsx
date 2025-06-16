@@ -12,7 +12,7 @@ import {
   SheetFooter
 } from "@/components/ui/sheet"
 import { Checkbox } from "@/components/ui/checkbox"
-import { DollarSign } from "lucide-react"
+import { DollarSign, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -74,10 +74,11 @@ interface Tab {
 interface TabDetailProps {
   tab: Tab
   onUpdateQuantity: (tabId: string, productId: string, newQuantity: number) => void
-  onCloseTab?: () => void
+  onCloseTab: () => void
+  onMinimize?: () => void
 }
 
-export function TabDetail({ tab, onUpdateQuantity, onCloseTab }: TabDetailProps) {
+export function TabDetail({ tab, onUpdateQuantity, onCloseTab, onMinimize }: TabDetailProps) {
   const router = useRouter()
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({})
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -312,7 +313,20 @@ export function TabDetail({ tab, onUpdateQuantity, onCloseTab }: TabDetailProps)
     <div className="p-2 md:p-4 h-full flex flex-col">
       <div className="flex justify-between items-center mb-2 md:mb-4">
         <h2 className="text-lg md:text-xl font-bold">{tab.name}</h2>
-        <div className="text-xs md:text-sm text-gray-500">{tab.id}</div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs md:text-sm text-gray-500">{tab.id}</div>
+          {onMinimize && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMinimize}
+              className="h-6 w-6 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              title="Cerrar vista de productos"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">

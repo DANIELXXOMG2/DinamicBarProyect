@@ -5,65 +5,67 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trash2, Calendar, Clock, Package, Building, Eye } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-
-interface PurchaseItem {
-  productId: string
-  productName: string
-  productImage?: string
-  quantity: number
-  purchasePrice: number
-  salePrice: number
-  iva?: number
-  total: number
-}
-
-interface Purchase {
-  id: string
-  date: string
-  time: string
-  supplierId: string
-  supplierName: string
-  companyImage?: string
-  items: PurchaseItem[]
-  subtotal: number
-  totalIva: number
-  grandTotal: number
-  createdAt: string
-}
+import { PurchaseItem, Purchase } from "../types/purchase"
 
 export function PurchasesList() {
   const [purchases, setPurchases] = useState<Purchase[]>([])
   const [expandedPurchase, setExpandedPurchase] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadPurchases = () => {
-      const stored = JSON.parse(localStorage.getItem('purchases') || '[]')
-      setPurchases(stored.sort((a: Purchase, b: Purchase) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ))
+    const loadPurchases = async () => {
+      try {
+        const response = await fetch('/api/purchases')
+        if (response.ok) {
+          const data = await response.json()
+          setPurchases((data.purchases || []).sort((a: Purchase, b: Purchase) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ))
+        } else {
+          throw new Error('API error')
+        }
+      } catch (error) {
+        console.error('Error loading purchases from API, falling back to localStorage:', error)
+        // Fallback a localStorage
+        const stored = JSON.parse(localStorage.getItem('purchases') || '[]')
+        setPurchases(stored.sort((a: Purchase, b: Purchase) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ))
+      }
     }
 
     loadPurchases()
-
-    // Escuchar cambios en localStorage
-    const handleStorageChange = () => {
-      loadPurchases()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('¿Está seguro de que desea eliminar esta compra?')) {
-      const updatedPurchases = purchases.filter(p => p.id !== id)
-      setPurchases(updatedPurchases)
-      localStorage.setItem('purchases', JSON.stringify(updatedPurchases))
-      
-      toast({
-        title: "Éxito",
-        description: "Compra eliminada correctamente"
-      })
+      try {
+        const response = await fetch(`/api/purchases/${id}`, {
+          method: 'DELETE'
+        })
+
+        if (response.ok) {
+          const updatedPurchases = purchases.filter(p => p.id !== id)
+          setPurchases(updatedPurchases)
+          
+          toast({
+            title: "Éxito",
+            description: "Compra eliminada correctamente"
+          })
+        } else {
+          throw new Error('Error deleting from API')
+        }
+      } catch (error) {
+        console.error('Error deleting from API, falling back to localStorage:', error)
+        // Fallback a localStorage
+        const updatedPurchases = purchases.filter(p => p.id !== id)
+        setPurchases(updatedPurchases)
+        localStorage.setItem('purchases', JSON.stringify(updatedPurchases))
+        
+        toast({
+          title: "Éxito",
+          description: "Compra eliminada correctamente"
+        })
+      }
     }
   }
 

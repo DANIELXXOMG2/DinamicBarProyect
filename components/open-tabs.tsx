@@ -51,6 +51,7 @@ export function TableManagement() {
   const [activeTab, setActiveTab] = useState<string | null>(null)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     loadTabs()
@@ -171,6 +172,14 @@ export function TableManagement() {
   }
 
   const handleCloseTab = async (tabId: string) => {
+    if (deleteConfirm !== tabId) {
+      // Primer clic - activar confirmación
+      setDeleteConfirm(tabId)
+      setTimeout(() => setDeleteConfirm(null), 3000)
+      return
+    }
+
+    // Segundo clic - confirmar eliminación
     try {
       const response = await fetch(`/api/tabs/${tabId}`, {
         method: 'DELETE'
@@ -181,6 +190,7 @@ export function TableManagement() {
         if (activeTab === tabId) {
           setActiveTab(null)
         }
+        setDeleteConfirm(null)
         toast({
           title: "Mesa cerrada",
           description: "Mesa cerrada exitosamente"
@@ -299,7 +309,16 @@ export function TableManagement() {
         </div>
           ) : (
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${
+            // Lógica de columnas dinámicas basada en el número de mesas
+            (() => {
+              const tabCount = tabs.length;
+              if (tabCount <= 4) return 'grid-cols-1 md:grid-cols-2';
+              if (tabCount <= 9) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+              if (tabCount <= 16) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+              return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
+            })()
+          }`}>
             {tabs.map(tab => (
               <div
                 key={tab.id}
@@ -326,7 +345,7 @@ export function TableManagement() {
                   ) : (
                     <>
                       <h3 className="font-medium">{tab.name}</h3>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                     <Button
                           size="icon" 
                       variant="ghost"
@@ -334,8 +353,9 @@ export function TableManagement() {
                         e.stopPropagation()
                         handleEditTabName(tab)
                       }}
+                      className="h-7 w-7"
                     >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3 w-3" />
                     </Button>
                   <Button
                           size="icon" 
@@ -344,8 +364,14 @@ export function TableManagement() {
                       e.stopPropagation()
                       handleCloseTab(tab.id)
                     }}
+                    className={`h-7 w-7 transition-all duration-300 ${
+                      deleteConfirm === tab.id
+                        ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                        : 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                    }`}
+                    title={deleteConfirm === tab.id ? 'Confirmar eliminar' : 'Eliminar mesa'}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4 font-bold" />
                   </Button>
                       </div>
                     </>
@@ -371,6 +397,7 @@ export function TableManagement() {
             onCloseTab={() => {
               handleCloseTab(activeTab)
             }}
+            onMinimize={() => setActiveTab(null)}
           />
           </div>
         )}

@@ -1,13 +1,11 @@
-version: '3.8'
-
 services:
-  postgres:
+  db:
     image: postgres:15
     container_name: restaurant-pos-db
     environment:
       POSTGRES_DB: restaurant_pos
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: danielxxomg
+      POSTGRES_PASSWORD: 4033
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +18,7 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      - db
     restart: unless-stopped
 
 volumes:
