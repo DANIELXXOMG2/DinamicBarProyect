@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string>('Restaurant POS');
 
   // Cargar logo desde localStorage y verificar si ya existe una sesión
   useEffect(() => {
@@ -64,6 +65,9 @@ export default function LoginPage() {
         if (config.logo) {
           setLogoUrl(config.logo);
         }
+        if (config.name) {
+          setStoreName(config.name);
+        }
       } catch (error) {
         console.error('Error parsing store config:', error);
       }
@@ -77,6 +81,9 @@ export default function LoginPage() {
           const { store } = await response.json();
           if (store?.image) {
             setLogoUrl(store.image);
+          }
+          if (store?.name) {
+            setStoreName(store.name);
           }
         }
       } catch (error) {
@@ -266,7 +273,7 @@ export default function LoginPage() {
               </div>
             )}
           </div>
-          <h1 className="text-2xl font-bold">Restaurant POS</h1>
+          <h1 className="text-2xl font-bold">{storeName}</h1>
           <p className="text-sm text-gray-500">Sistema de punto de venta</p>
         </div>
 

@@ -2,9 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+import { Table, Waves } from 'lucide-react';
+
 import { ProductCategories } from '@/components/product-categories';
 import { ProductsList } from '@/components/products-list';
 import { SearchBar } from '@/components/search-bar';
+import { TableSelectionDialog } from '@/components/table-selection-dialog';
+import { Button } from '@/components/ui/button';
+
+interface TableData {
+  id: string;
+  name: string;
+}
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState('Cervezas');
@@ -13,6 +22,8 @@ export default function ProductsPage() {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
+  const [isTableSelectionOpen, setTableSelectionOpen] = useState(false);
 
   // Verificar autenticación
   useEffect(() => {
@@ -82,6 +93,15 @@ export default function ProductsPage() {
     setSearchQuery(query);
   };
 
+  const handleSelectTable = (table: TableData) => {
+    setSelectedTable(table);
+    setTableSelectionOpen(false);
+  };
+
+  const handleClearTable = () => {
+    setSelectedTable(null);
+  };
+
   // Si está cargando, mostrar indicador
   if (isLoading) {
     return (
@@ -105,6 +125,34 @@ export default function ProductsPage() {
             placeholder="Buscar productos..."
             className="flex-1"
           />
+
+          {/* Botón para seleccionar mesa */}
+          <div className="flex items-center gap-2">
+            {selectedTable ? (
+              <div className="flex items-center gap-2 rounded-md bg-green-100 p-2 text-green-800">
+                <Table className="size-5" />
+                <span className="font-semibold">
+                  Mesa: {selectedTable.name}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearTable}
+                  className="text-green-800 hover:bg-green-200"
+                >
+                  Cambiar
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={() => setTableSelectionOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Waves className="size-5" />
+                Seleccionar Mesa
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Categorías de productos */}
@@ -119,6 +167,14 @@ export default function ProductsPage() {
           category={activeCategory}
           searchQuery={searchQuery}
           onProductsLoad={handleProductsLoad}
+          selectedTable={selectedTable?.id ?? null}
+        />
+
+        {/* Diálogo para seleccionar mesa */}
+        <TableSelectionDialog
+          isOpen={isTableSelectionOpen}
+          onOpenChange={setTableSelectionOpen}
+          onSelectTable={handleSelectTable}
         />
       </main>
     </div>

@@ -177,6 +177,38 @@ async function main() {
     console.timeEnd('Creación de proveedor');
     console.log('✅ Proveedor de prueba creado:', testSupplier.name);
 
+    // Crear mesas
+    console.log('🪑 Creando mesas...');
+    console.time('Creación de mesas');
+    await Promise.all([
+      ...Array.from({ length: 10 }, (_, i) =>
+        prisma.table.create({
+          data: {
+            name: `Mesa ${i + 1}`,
+            tableGroupId: tableGroups[0].id,
+          },
+        })
+      ),
+      ...Array.from({ length: 5 }, (_, i) =>
+        prisma.table.create({
+          data: {
+            name: `Terraza ${i + 1}`,
+            tableGroupId: tableGroups[1].id,
+          },
+        })
+      ),
+      ...Array.from({ length: 3 }, (_, i) =>
+        prisma.table.create({
+          data: {
+            name: `Barra ${i + 1}`,
+            tableGroupId: tableGroups[2].id,
+          },
+        })
+      ),
+    ]);
+    console.timeEnd('Creación de mesas');
+    console.log('✅ Mesas creadas');
+
     console.timeEnd('Tiempo total de seed');
     console.log('🎉 Seed completado exitosamente!');
   } catch (error) {
