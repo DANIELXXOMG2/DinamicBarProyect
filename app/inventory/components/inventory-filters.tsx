@@ -39,6 +39,7 @@ export function InventoryFilters({
         <div className="w-64">
           <div className="relative">
             <Input
+              id="inventory-search"
               placeholder="Buscar producto..."
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}

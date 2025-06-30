@@ -2,23 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-import { Header } from '@/components/header';
 import { ProductCategories } from '@/components/product-categories';
 import { ProductsList } from '@/components/products-list';
 import { SearchBar } from '@/components/search-bar';
-import { TableSelector } from '@/components/table-selector';
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState('Cervezas');
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(
     {}
   );
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [selectedTableName, setSelectedTableName] = useState<string | null>(
-    null
-  );
   const [searchQuery, setSearchQuery] = useState('');
-  const [showTableSelector, setShowTableSelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Verificar autenticación
@@ -43,16 +36,15 @@ export default function ProductsPage() {
     }
   }, []);
 
-  // Atajos de teclado
+  // Atajos de teclado para categorías
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Atajos de categorías (Alt + número)
+    const handleCategoryShortcut = (event: Event) => {
       if (
-        e.altKey &&
-        !Number.isNaN(Number.parseInt(e.key)) &&
-        Number.parseInt(e.key) >= 1 &&
-        Number.parseInt(e.key) <= 7
+        event instanceof CustomEvent &&
+        event.detail &&
+        typeof event.detail.categoryIndex === 'number'
       ) {
+        const categoryIndex = event.detail.categoryIndex;
         const categories = [
           'Cervezas',
           'Licores',
@@ -62,26 +54,20 @@ export default function ProductsPage() {
           'Cigarrería',
           'Cacharrería',
         ];
-        const selectedCategory = categories[Number.parseInt(e.key) - 1];
+        const selectedCategory = categories.at(categoryIndex);
         if (selectedCategory) {
           setActiveCategory(selectedCategory);
         }
       }
-
-      // Atajo para enfocar búsqueda (Alt + F)
-      if (e.altKey && e.key === 'f') {
-        e.preventDefault();
-        const searchInput = document.querySelector(
-          '#product-search'
-        ) as HTMLElement;
-        if (searchInput) {
-          searchInput.focus();
-        }
-      }
     };
 
-    globalThis.addEventListener('keydown', handleKeyDown);
-    return () => globalThis.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('category-shortcut', handleCategoryShortcut);
+    return () => {
+      globalThis.removeEventListener(
+        'category-shortcut',
+        handleCategoryShortcut
+      );
+    };
   }, []);
 
   const handleCategoryChange = (category: string) => {
@@ -91,12 +77,6 @@ export default function ProductsPage() {
   const handleProductsLoad = useCallback((counts: Record<string, number>) => {
     setCategoryCounts(counts);
   }, []);
-
-  const handleTableSelect = (tableId: string, tableName: string) => {
-    setSelectedTable(tableId);
-    setSelectedTableName(tableName);
-    setShowTableSelector(false);
-  };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -116,7 +96,6 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-4">
         {/* Barra de búsqueda y selector de mesa */}
         <div className="mb-4 flex flex-col justify-between gap-2 md:flex-row md:items-center">
@@ -126,24 +105,6 @@ export default function ProductsPage() {
             placeholder="Buscar productos..."
             className="flex-1"
           />
-
-          {/* Selector de mesa */}
-          <div className="mb-4 flex items-center gap-2">
-            <button
-              onClick={() => setShowTableSelector(true)}
-              className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
-            >
-              {selectedTable
-                ? `Mesa: ${selectedTableName}`
-                : 'Seleccionar Mesa'}
-            </button>
-            {selectedTable && (
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <span className="size-2 rounded-full bg-green-500"></span>
-                Mesa activa
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Categorías de productos */}
@@ -157,18 +118,9 @@ export default function ProductsPage() {
         <ProductsList
           category={activeCategory}
           searchQuery={searchQuery}
-          selectedTable={selectedTable}
           onProductsLoad={handleProductsLoad}
         />
       </main>
-
-      {/* Modal selector de mesa */}
-      {showTableSelector && (
-        <TableSelector
-          onSelect={handleTableSelect}
-          onClose={() => setShowTableSelector(false)}
-        />
-      )}
     </div>
   );
 }

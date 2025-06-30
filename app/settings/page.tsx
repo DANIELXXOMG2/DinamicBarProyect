@@ -7,7 +7,6 @@ import { Save, Upload, Store } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 
-import { Header } from '../../components/header';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -121,7 +120,6 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
         <main className="flex-1 overflow-auto p-4">
           <div className="flex h-64 items-center justify-center">
             <div className="text-lg">Cargando configuración...</div>
@@ -133,7 +131,6 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-4">
         <h1 className="mb-6 text-2xl font-bold">Configuración</h1>
 

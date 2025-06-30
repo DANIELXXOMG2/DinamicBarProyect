@@ -10,7 +10,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import { Header } from '@/components/header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -211,7 +210,6 @@ export default function CashRegisterPage() {
   if (loading) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
         <main className="flex-1 overflow-auto p-4">
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
@@ -226,7 +224,6 @@ export default function CashRegisterPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-4">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="flex items-center justify-between">

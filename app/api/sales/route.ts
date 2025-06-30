@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { SalesService } from '@/lib/services/sales';
 
 const createSaleSchema = z.object({
-  tabId: z.string().min(1, 'El ID de la mesa es requerido'),
+  tableId: z.string().min(1, 'El ID de la mesa es requerido'),
   paymentMethod: z.nativeEnum(PaymentMethod),
   cashReceived: z.number().optional(),
 });

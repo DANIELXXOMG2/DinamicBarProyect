@@ -74,33 +74,48 @@ model Product {
   @@map("products")
 }
 
-// Modelo para las mesas/tabs abiertas
-model Tab {
-  id        String    @id @default(cuid())
+// Modelo para los grupos de mesas
+model TableGroup {
+  id        String   @id @default(cuid())
   name      String
-  isActive  Boolean   @default(true)
-  subtotal  Float     @default(0)
-  tip       Float     @default(0)
-  total     Float     @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  items     TabItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tables    Table[]
 
-  @@map("tabs")
+  @@map("table_groups")
+}
+
+// Modelo para las mesas
+model Table {
+  id           String      @id @default(cuid())
+  name         String
+  isActive     Boolean     @default(true)
+  subtotal     Float       @default(0)
+  tip          Float       @default(0)
+  total        Float       @default(0)
+  positionX    Int         @default(0)
+  positionY    Int         @default(0)
+  tableGroupId String?
+  tableGroup   TableGroup? @relation(fields: [tableGroupId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  items        TabItem[]
+
+  @@map("tables")
 }
 
 // Modelo para los items de cada mesa
 model TabItem {
   id        String   @id @default(cuid())
   quantity  Int      @default(1)
-  tabId     String
+  tableId   String
   productId String
-  tab       Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([tabId, productId])
+  @@unique([tableId, productId])
   @@map("tab_items")
 }
 
@@ -112,7 +127,7 @@ enum ProductType {
 // Modelo para las ventas completadas
 model Sale {
   id             String        @id @default(cuid())
-  tabId          String        @unique
+  tableId        String        @unique
   subtotal       Float
   tip            Float         @default(0)
   total          Float
@@ -193,7 +208,7 @@ enum TransactionType {
 // Modelo para pagos
 model Payment {
   id        String   @id @default(cuid())
-  tabId     String
+  tableId   String
   amount    Float
   method    String // Método de pago (cash, card, etc.)
   date      DateTime @default(now())

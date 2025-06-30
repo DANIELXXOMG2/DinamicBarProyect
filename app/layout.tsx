@@ -2,6 +2,7 @@ import type React from 'react';
 
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { KeyboardShortcuts } from '@/components/keyboard-shortcuts';
 import { AuthProvider } from '@/hooks/use-auth';
 import { ClientLayout } from '@/components/client-layout';
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <ClientLayout>{children}</ClientLayout>
           </AuthProvider>
           <Toaster />
+          <KeyboardShortcuts />
         </ThemeProvider>
       </body>
     </html>

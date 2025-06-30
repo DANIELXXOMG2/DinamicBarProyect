@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
 // Endpoint para actualizar un usuario
 export async function PUT(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar si el usuario es administrador
@@ -67,7 +67,7 @@ export async function PUT(
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
     const body = await _request.json();
 
     // Validación de datos
@@ -96,7 +96,7 @@ export async function PUT(
 // Endpoint para eliminar un usuario
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar si el usuario es administrador
@@ -108,7 +108,7 @@ export async function DELETE(
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // Verificar si es el último administrador
     // Esto debería implementarse en un método separado

@@ -34,7 +34,8 @@ async function main() {
     console.log('🧹 Limpiando datos existentes...');
     console.time('Limpieza de datos');
     await prisma.tabItem.deleteMany();
-    await prisma.tab.deleteMany();
+    await prisma.table.deleteMany();
+    await prisma.tableGroup.deleteMany();
     await prisma.product.deleteMany();
     await prisma.category.deleteMany();
 
@@ -149,71 +150,16 @@ async function main() {
     console.timeEnd('Creación de productos');
     console.log('✅ Productos creados:', products.length);
 
-    // Crear algunas mesas de ejemplo
-    console.log('🪑 Creando mesas de ejemplo...');
-    console.time('Creación de mesas');
-    const tabs = await Promise.all([
-      prisma.tab.create({
-        data: {
-          name: 'Mesa 1',
-          isActive: true,
-        },
-      }),
-      prisma.tab.create({
-        data: {
-          name: 'Mesa 2',
-          isActive: true,
-        },
-      }),
+    // Crear grupos de mesas
+    console.log('🪑 Creando grupos de mesas...');
+    console.time('Creación de grupos de mesas');
+    const tableGroups = await Promise.all([
+      prisma.tableGroup.create({ data: { name: 'Salón Principal' } }),
+      prisma.tableGroup.create({ data: { name: 'Terraza' } }),
+      prisma.tableGroup.create({ data: { name: 'Barra' } }),
     ]);
-    console.log('✅ Mesas creadas:', tabs.length);
-
-    // Agregar algunos items a las mesas
-    await prisma.tabItem.create({
-      data: {
-        tabId: tabs[0].id,
-        productId: products[0].id,
-        quantity: 2,
-      },
-    });
-
-    await prisma.tabItem.create({
-      data: {
-        tabId: tabs[0].id,
-        productId: products[5].id,
-        quantity: 1,
-      },
-    });
-    console.timeEnd('Creación de mesas');
-
-    // Recalcular totales de las mesas
-    console.log('🧮 Recalculando totales...');
-    console.time('Recálculo de totales');
-    for (const tab of tabs) {
-      const tabItems = await prisma.tabItem.findMany({
-        where: { tabId: tab.id },
-        include: { product: true },
-      });
-
-      const subtotal = tabItems.reduce(
-        (
-          sum: number,
-          item: { product: { salePrice: number }; quantity: number }
-        ) => {
-          return sum + item.product.salePrice * item.quantity;
-        },
-        0
-      );
-
-      await prisma.tab.update({
-        where: { id: tab.id },
-        data: {
-          subtotal,
-          total: subtotal,
-        },
-      });
-    }
-    console.timeEnd('Recálculo de totales');
+    console.timeEnd('Creación de grupos de mesas');
+    console.log('✅ Grupos de mesas creados:', tableGroups.length);
 
     // Crear proveedor de prueba
     console.log('🏪 Creando proveedor de prueba...');

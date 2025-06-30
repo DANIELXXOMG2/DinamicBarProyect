@@ -2,7 +2,6 @@
 
 import { Calendar, Download, Filter } from 'lucide-react';
 
-import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -12,6 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Contabilidad',
+  icons: {
+    icon: '/favicons/accounting.svg',
+  },
+};
 
 export default function AccountingPage() {
   const transactions = [
@@ -64,7 +72,6 @@ export default function AccountingPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-4">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Contabilidad</h1>

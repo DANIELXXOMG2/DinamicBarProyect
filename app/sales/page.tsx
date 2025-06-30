@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Download, Search, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Header } from '@/components/header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -141,7 +140,6 @@ export default function SalesPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header */}

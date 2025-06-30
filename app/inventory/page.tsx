@@ -13,7 +13,7 @@ import { useAdminAuth } from './hooks/use-admin-auth';
 import { useInventoryData } from './hooks/use-inventory-data';
 import { useInventoryFilters } from './hooks/use-inventory-filters';
 import { NewProduct } from './types';
-import { Header } from '@/components/header';
+
 import { useToast } from '@/components/ui/use-toast';
 
 export default function InventoryPage() {
@@ -157,7 +157,6 @@ export default function InventoryPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <Header />
       <main className="flex-1 overflow-auto p-4">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Gestión de Inventario</h1>

@@ -1,11 +1,11 @@
 import { Sale, SaleItem, PaymentMethod } from '@prisma/client';
 
 import { CashRegisterService } from './cash-register';
-import { getTab, TabItem } from './tabs';
+import { getTable, TabItem } from './tables';
 import { prisma } from '@/lib/prisma';
 
 export interface CreateSaleData {
-  tabId: string;
+  tableId: string;
   paymentMethod: PaymentMethod;
   cashReceived?: number;
 }
@@ -47,7 +47,7 @@ export const SalesService = {
       }
 
       // Obtener la mesa con sus items
-      const tab = await getTab(data.tabId);
+      const tab = await getTable(data.tableId);
       if (!tab) {
         throw new Error('Mesa no encontrada');
       }
@@ -81,7 +81,7 @@ export const SalesService = {
         // Crear la venta
         const newSale = await tx.sale.create({
           data: {
-            tabId: data.tabId,
+            tableId: data.tableId,
             subtotal,
             tip: 0,
             total,
@@ -123,8 +123,8 @@ export const SalesService = {
         );
 
         // Cerrar la mesa
-        await tx.tab.update({
-          where: { id: data.tabId },
+        await tx.table.update({
+          where: { id: data.tableId },
           data: { isActive: false },
         });
 
@@ -343,8 +343,8 @@ export const SalesService = {
         );
 
         // Reactivar la mesa
-        await tx.tab.update({
-          where: { id: sale.tabId },
+        await tx.table.update({
+          where: { id: sale.tableId! },
           data: { isActive: true },
         });
 
