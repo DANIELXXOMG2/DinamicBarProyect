@@ -1,100 +1,103 @@
-"use client"
+'use client';
 
-import { ProductCard } from "@/components/product-card"
-import { useState, useEffect, useMemo } from "react"
-import { toast } from "@/hooks/use-toast"
+import { useState, useEffect, useMemo, useCallback } from 'react';
+
+import { ProductCard } from '@/components/product-card';
+import { toast } from '@/hooks/use-toast';
 
 interface Product {
-  id: string
-  name: string
-  purchasePrice: number
-  salePrice: number
-  stock: number
-  type: "ALCOHOLIC" | "NON_ALCOHOLIC"
-  image?: string
+  id: string;
+  name: string;
+  purchasePrice: number;
+  salePrice: number;
+  stock: number;
+  type: 'ALCOHOLIC' | 'NON_ALCOHOLIC';
+  image?: string;
   category: {
-    name: string
-  }
+    name: string;
+  };
 }
 
-interface ProductsListProps {
-  category?: string
-  searchQuery?: string
-  selectedTable?: string | null
-  onProductsLoad?: (categoryCounts: Record<string, number>) => void
+interface ProductsListProperties {
+  readonly category?: string;
+  readonly searchQuery?: string;
+  readonly selectedTable?: string | null;
+  readonly onProductsLoad?: (categoryCounts: Record<string, number>) => void;
 }
 
-export function ProductsList({ category = "Cervezas", searchQuery = "", selectedTable, onProductsLoad }: ProductsListProps) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function ProductsList({
+  category = 'Cervezas',
+  searchQuery = '',
+  selectedTable,
+  onProductsLoad,
+}: ProductsListProperties) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadProducts()
-  }, [])
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/inventory/products')
+      setLoading(true);
+      const response = await fetch('/api/inventory/products');
       if (response.ok) {
-        const { products } = await response.json()
-        setProducts(products)
-        
-        // Calcular conteos por categoría
-        const categoryCounts = products.reduce((acc: Record<string, number>, product: Product) => {
-          const categoryName = product.category.name
-          acc[categoryName] = (acc[categoryName] || 0) + 1
-          return acc
-        }, {})
-        
-        onProductsLoad?.(categoryCounts)
+        const { products } = await response.json();
+        setProducts(products);
+
+        // Calcular conteos por categoría de forma segura
+        const categoryCounts = new Map<string, number>();
+        for (const product of products) {
+          const categoryName = product.category.name;
+          const currentCount = categoryCounts.get(categoryName) || 0;
+          categoryCounts.set(categoryName, currentCount + 1);
+        }
+
+        onProductsLoad?.(Object.fromEntries(categoryCounts));
       } else {
-        setError('Error al cargar los productos')
+        setError('Error al cargar los productos');
       }
     } catch (error) {
-      console.error('Error loading products:', error)
-      setError('Error al cargar los productos')
+      console.error('Error loading products:', error);
+      setError('Error al cargar los productos');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [onProductsLoad]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   // Filtrado eficiente por búsqueda y categoría
   const filteredProducts = useMemo(() => {
-    let filtered = products
-
-    // Filtrar por categoría si no hay búsqueda
-    if (!searchQuery.trim()) {
-      filtered = products.filter((product) => product.category.name === category)
-    } else {
-      // Filtrar por búsqueda (búsqueda en tiempo real por cada carácter)
-      const query = searchQuery.toLowerCase().trim()
-      filtered = products.filter((product) => {
-        const nameMatch = product.name.toLowerCase().includes(query)
-        const categoryMatch = product.category.name.toLowerCase().includes(query)
-        const priceMatch = product.salePrice.toString().includes(query)
-        return nameMatch || categoryMatch || priceMatch
-      })
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return products.filter((product) => {
+        const nameMatch = product.name.toLowerCase().includes(query);
+        const categoryMatch = product.category.name
+          .toLowerCase()
+          .includes(query);
+        const priceMatch = product.salePrice.toString().includes(query);
+        return nameMatch || categoryMatch || priceMatch;
+      });
     }
+    return products.filter((product) => product.category.name === category);
+  }, [products, category, searchQuery]);
 
-    return filtered
-  }, [products, category, searchQuery])
-
-  const handleAddToTable = async (productId: string, quantity: number = 1) => {
+  const handleAddToTable = async (productId: string, quantity = 1) => {
     if (!selectedTable) {
       toast({
-        title: "Mesa no seleccionada",
-        description: "Por favor selecciona una mesa antes de agregar productos.",
-        variant: "destructive"
-      })
-      return
+        title: 'Mesa no seleccionada',
+        description:
+          'Por favor selecciona una mesa antes de agregar productos.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
-      const product = products.find(p => p.id === productId)
+      const product = products.find((p) => p.id === productId);
       if (!product) {
-        throw new Error('Producto no encontrado')
+        throw new Error('Producto no encontrado');
       }
 
       const response = await fetch(`/api/tabs/${selectedTable}/items`, {
@@ -105,76 +108,85 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
         body: JSON.stringify({
           productId,
           quantity,
-          price: product.salePrice
-        })
-      })
+          price: product.salePrice,
+        }),
+      });
 
       if (response.ok) {
         toast({
-          title: "Producto agregado",
+          title: 'Producto agregado',
           description: `${product.name} agregado a la mesa.`,
-        })
+        });
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al agregar producto')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al agregar producto');
       }
     } catch (error) {
-      console.error('Error adding product to table:', error)
+      console.error('Error adding product to table:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al agregar producto a la mesa.",
-        variant: "destructive"
-      })
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Error al agregar producto a la mesa.',
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-32">
+      <div className="flex h-32 items-center justify-center">
         <div className="text-gray-500">Cargando productos...</div>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-32">
+      <div className="flex h-32 items-center justify-center">
         <div className="text-red-500">{error}</div>
       </div>
-    )
+    );
   }
 
   if (filteredProducts.length === 0) {
     return (
-      <div className="flex justify-center items-center h-32">
+      <div className="flex h-32 items-center justify-center">
         <div className="text-gray-500">
-          {searchQuery.trim() 
-            ? `No se encontraron productos para "${searchQuery}"`
-            : "No hay productos en esta categoría"
-          }
+          {searchQuery.trim()
+            ? `No se encontraron productos para la búsqueda: ${searchQuery}`
+            : 'No hay productos en esta categoría'}
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-2">
       {searchQuery.trim() && (
-        <div className="text-sm text-gray-600 mb-3">
-          {filteredProducts.length} resultado{filteredProducts.length !== 1 ? 's' : ''} para "{searchQuery}"
+        <div className="mb-3 text-sm text-gray-600">
+          {filteredProducts.length} resultado
+          {filteredProducts.length === 1 ? '' : 's'} para &apos;{searchQuery}
+          &apos;
         </div>
       )}
-      
-      <div className={`grid gap-4 ${
-        // Lógica de columnas dinámicas basada en el número de productos
-        (() => {
-          const productCount = filteredProducts.length;
-          if (productCount <= 8) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-          if (productCount <= 20) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-          if (productCount <= 40) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
-          return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6';
-        })()
-      }`}>
+
+      <div
+        className={`grid gap-4 ${
+          // Lógica de columnas dinámicas basada en el número de productos
+          (() => {
+            const productCount = filteredProducts.length;
+            if (productCount <= 8)
+              return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+            if (productCount <= 20)
+              return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+            if (productCount <= 40)
+              return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
+            return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6';
+          })()
+        }`}
+      >
         {filteredProducts.map((product) => (
           <ProductCard
             key={product.id}
@@ -182,7 +194,7 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
             title={product.name}
             salePrice={product.salePrice}
             stock={product.stock}
-            type={product.type === "ALCOHOLIC" ? "Alc" : "NoAlc"}
+            type={product.type === 'ALCOHOLIC' ? 'Alc' : 'NoAlc'}
             image={product.image}
             onAddToTable={handleAddToTable}
             canAddToTable={!!selectedTable}
@@ -190,5 +202,5 @@ export function ProductsList({ category = "Cervezas", searchQuery = "", selected
         ))}
       </div>
     </div>
-  )
+  );
 }

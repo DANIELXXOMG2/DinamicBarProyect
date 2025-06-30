@@ -1,77 +1,93 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
-import { Eye, EyeOff, LogIn } from "lucide-react"
+import { useState } from 'react';
 
-interface LoginFormProps {
-  onSuccess: (userData: any) => void
+import { Eye, EyeOff, LogIn } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+
+interface User {
+  readonly id: string;
+  readonly username: string;
+  readonly role: 'ADMIN' | 'CASHIER' | 'WAITER';
 }
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+interface LoginFormProperties {
+  readonly onSuccess: (userData: User) => void;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+export function LoginForm({ onSuccess }: LoginFormProperties) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
     if (!username || !password) {
       toast({
-        title: "Error",
-        description: "Por favor ingresa usuario y contraseña",
-        variant: "destructive"
-      })
-      return
+        title: 'Error',
+        description: 'Por favor ingresa usuario y contraseña',
+        variant: 'destructive',
+      });
+      return;
     }
-    
+
     try {
-      setLoading(true)
-      
+      setLoading(true);
+
       const response = await fetch('/api/auth', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password })
-      })
-      
-      const data = await response.json()
-      
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión')
+        throw new Error(data.error || 'Error al iniciar sesión');
       }
-      
+
       // Guardar en localStorage para persistencia
-      localStorage.setItem('user', JSON.stringify(data.user))
-      
+      localStorage.setItem('user', JSON.stringify(data.user));
+
       toast({
-        title: "Sesión iniciada",
+        title: 'Sesión iniciada',
         description: `Bienvenido ${data.user.username}`,
-      })
-      
-      onSuccess(data.user)
+      });
+
+      onSuccess(data.user);
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('Login error:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al iniciar sesión",
-        variant: "destructive"
-      })
+        title: 'Error',
+        description:
+          error instanceof Error ? error.message : 'Error al iniciar sesión',
+        variant: 'destructive',
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh]">
+    <div className="flex min-h-[80vh] items-center justify-center">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
+          <CardTitle className="text-center text-2xl">Iniciar Sesión</CardTitle>
           <CardDescription className="text-center">
             Ingresa tus credenciales para acceder al sistema
           </CardDescription>
@@ -86,7 +102,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 id="username"
                 placeholder="Ingresa tu usuario"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(event) => setUsername(event.target.value)}
                 disabled={loading}
                 required
               />
@@ -98,40 +114,36 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Ingresa tu contraseña"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   disabled={loading}
                   required
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="size-4" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="size-4" />
                   )}
                 </button>
               </div>
             </div>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full"
-              type="submit"
-              disabled={loading}
-            >
+            <Button className="w-full" type="submit" disabled={loading}>
               {loading ? (
                 <span className="flex items-center gap-1">
                   <span className="animate-spin">⏳</span> Cargando...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <LogIn className="h-4 w-4" /> Ingresar
+                  <LogIn className="size-4" /> Ingresar
                 </span>
               )}
             </Button>
@@ -139,5 +151,5 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </form>
       </Card>
     </div>
-  )
-} 
+  );
+}

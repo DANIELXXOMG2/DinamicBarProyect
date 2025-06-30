@@ -1,97 +1,112 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { Minus, Plus, ShoppingCart, Package, PlusSquare } from "lucide-react"
-import { useState } from "react"
-import Image from "next/image"
+import { useState } from 'react';
 
-interface ProductCardProps {
-  id: string
-  title: string
-  salePrice: number
-  stock: number
-  type: "Alc" | "NoAlc"
-  image?: string
-  onAddToTable?: (productId: string, quantity: number) => void
-  canAddToTable?: boolean
+import { Minus, Plus, ShoppingCart, Package, PlusSquare } from 'lucide-react';
+import Image from 'next/image';
+
+import { Button } from '@/components/ui/button';
+
+interface ProductCardProperties {
+  readonly id: string;
+  readonly title: string;
+  readonly salePrice: number;
+  readonly stock: number;
+  readonly type: 'Alc' | 'NoAlc';
+  readonly image?: string;
+  readonly onAddToTable?: (productId: string, quantity: number) => void;
+  readonly canAddToTable?: boolean;
 }
 
-export function ProductCard({ 
-  id, 
-  title, 
-  salePrice, 
-  stock, 
-  type, 
-  image, 
-  onAddToTable, 
-  canAddToTable = false 
-}: ProductCardProps) {
-  const [quantity, setQuantity] = useState(1)
-  const [imageError, setImageError] = useState(false)
+export function ProductCard({
+  id,
+  title,
+  salePrice,
+  stock,
+  type,
+  image,
+  onAddToTable,
+  canAddToTable = false,
+}: ProductCardProperties) {
+  const [quantity, setQuantity] = useState(1);
+  const [imageError, setImageError] = useState(false);
 
   const handleAdd = () => {
     if (stock >= quantity) {
-      setQuantity(quantity + 1)
+      setQuantity(quantity + 1);
     }
-  }
+  };
 
   const handleRemove = () => {
     if (quantity > 1) {
-      setQuantity(quantity - 1)
+      setQuantity(quantity - 1);
     }
-  }
+  };
 
   const handleAddToTable = () => {
     if (onAddToTable && canAddToTable && stock >= quantity) {
-      onAddToTable(id, quantity)
-      setQuantity(1) // Reset quantity after adding
+      onAddToTable(id, quantity);
+      setQuantity(1); // Reset quantity after adding
     }
-  }
+  };
 
-  const isOutOfStock = stock === 0
-  const isLowStock = stock > 0 && stock <= 5
+  const isOutOfStock = stock === 0;
+  const isLowStock = stock > 0 && stock <= 5;
 
   return (
-    <div className={`flex flex-col p-4 border rounded-lg hover:bg-gray-50 focus-within:ring-2 focus-within:ring-green-500 transition-all duration-200 h-full ${
-      isOutOfStock ? 'opacity-50 bg-gray-100' : ''
-    }`}>
-      <div className="flex items-start mb-3">
+    <div
+      className={`flex h-full flex-col rounded-lg border p-4 transition-all duration-200 ${
+        isOutOfStock ? 'bg-gray-100 opacity-50' : ''
+      }`}
+    >
+      <div className="mb-3 flex items-start">
         {/* Imagen del producto */}
-        <div className="w-16 h-16 mr-3 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border">
+        <button
+          type="button"
+          className="mr-3 size-16 shrink-0 overflow-hidden rounded-lg border bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
           {image && !imageError ? (
             <Image
               src={image}
               alt={title}
               width={64}
               height={64}
-              className="w-full h-full object-cover"
+              className="size-full object-cover"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="h-6 w-6 text-gray-400" />
+            <div className="flex size-full items-center justify-center">
+              <Package className="size-6 text-gray-400" />
             </div>
           )}
-        </div>
+        </button>
 
         {/* Información del producto */}
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
+          <div className="mb-1 flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-            <div className="flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${
-                type === "Alc" ? "bg-red-500" : "bg-green-500"
-              }`}></span>
+            <div className="flex items-center gap-1" role="status">
+              <span
+                className={`size-2 rounded-full ${
+                  type === 'Alc' ? 'bg-red-500' : 'bg-green-500'
+                }`}
+              ></span>
               <span className="text-xs text-gray-500">{type}</span>
             </div>
           </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-green-600 font-bold text-lg">${salePrice.toFixed(2)}</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs ${
-                isOutOfStock ? 'text-red-500' : isLowStock ? 'text-orange-500' : 'text-gray-500'
-              }`}>
+
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold text-green-600">
+              ${salePrice.toFixed(2)}
+            </span>
+            <div className="flex items-center gap-2" role="status">
+              <span
+                className={`text-xs ${(() => {
+                  if (isOutOfStock) return 'text-red-500';
+                  if (isLowStock) return 'text-orange-500';
+                  return 'text-gray-500';
+                })()}`}
+              >
                 Stock: {stock}
                 {isOutOfStock && ' (Agotado)'}
                 {isLowStock && !isOutOfStock && ' (Poco)'}
@@ -102,32 +117,37 @@ export function ProductCard({
       </div>
 
       {/* Controles de cantidad y agregar */}
-      <div className="flex items-center justify-between mt-auto">
+      <div className="mt-auto flex items-center justify-between">
         {/* Selector de cantidad */}
         <div className="flex items-center gap-3">
           <Button
+            type="button"
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-full"
+            className="size-9 rounded-full"
             onClick={handleRemove}
             disabled={quantity <= 1 || isOutOfStock}
           >
-            <Minus className="h-4 w-4" />
+            <Minus className="size-4" />
           </Button>
-          <span className="text-sm font-medium w-6 text-center">{quantity}</span>
+          <span className="w-6 text-center text-sm font-medium">
+            {quantity}
+          </span>
           <Button
+            type="button"
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-full"
+            className="size-9 rounded-full"
             onClick={handleAdd}
             disabled={stock <= quantity || isOutOfStock}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
           </Button>
           <Button
+            type="button"
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-full"
+            className="size-9 rounded-full"
             onClick={() => {
               if (stock >= quantity + 2) {
                 setQuantity(quantity + 2);
@@ -138,7 +158,7 @@ export function ProductCard({
             disabled={stock <= quantity || isOutOfStock}
             title="Añadir dos unidades"
           >
-            <PlusSquare className="h-4 w-4" />
+            <PlusSquare className="size-4" />
           </Button>
         </div>
 
@@ -146,13 +166,13 @@ export function ProductCard({
         <Button
           onClick={handleAddToTable}
           disabled={!canAddToTable || isOutOfStock || stock < quantity}
-          className="h-9 px-3 bg-blue-500 hover:bg-blue-600 text-white"
+          className="h-9 bg-blue-500 px-3 text-white hover:bg-blue-600"
           size="sm"
         >
-          <ShoppingCart className="h-4 w-4 mr-1" />
+          <ShoppingCart className="mr-1 size-4" />
           Agregar
         </Button>
       </div>
     </div>
-  )
+  );
 }

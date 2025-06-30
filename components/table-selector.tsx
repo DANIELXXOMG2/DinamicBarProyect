@@ -1,71 +1,101 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Users, Clock, Edit2, Check, X } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { useState, useEffect } from 'react';
+
+import { Plus, Users, Clock, Edit2, Check, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import { TabWithItems } from '@/lib/services/tabs';
 
 interface Tab {
-  id: string
-  name: string
-  isActive: boolean
-  total: number
-  createdAt: string
-  items: any[]
+  id: string;
+  name: string;
+  isActive: boolean;
+  total: number;
+  createdAt: string;
+  items: TabWithItems['items'];
 }
 
-interface TableSelectorProps {
-  onSelect: (tableId: string, tableName: string) => void
-  onClose: () => void
+interface TableSelectorProperties {
+  onSelect: (tableId: string, tableName: string) => void;
+  onClose: () => void;
 }
 
-export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
-  const [tables, setTables] = useState<Tab[]>([])
-  const [loading, setLoading] = useState(true)
-  const [newTableName, setNewTableName] = useState("")
-  const [editingTable, setEditingTable] = useState<string | null>(null)
-  const [editName, setEditName] = useState("")
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export function TableSelector({
+  onSelect,
+  onClose,
+}: Readonly<TableSelectorProperties>) {
+  const [tables, setTables] = useState<Tab[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTableName, setNewTableName] = useState('');
+  const [editingTable, setEditingTable] = useState<string | undefined>();
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
-    loadTables()
-  }, [])
+    loadTables();
+  }, []);
 
   const loadTables = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/tabs')
+      setLoading(true);
+      const response = await fetch('/api/tabs');
       if (response.ok) {
-        const { tabs } = await response.json()
-        setTables(tabs)
+        const { tabs } = await response.json();
+        setTables(tabs);
       } else {
         toast({
-          title: "Error",
-          description: "Error al cargar las mesas.",
-          variant: "destructive"
-        })
+          title: 'Error',
+          description: 'Error al cargar las mesas.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
-      console.error('Error loading tables:', error)
+      console.error('Error loading tables:', error);
       toast({
-        title: "Error",
-        description: "Error al cargar las mesas.",
-        variant: "destructive"
-      })
+        title: 'Error',
+        description: 'Error al cargar las mesas.',
+        variant: 'destructive',
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const createNewTable = async () => {
-    if (!newTableName.trim()) {
+    const trimmedName = newTableName.trim();
+
+    if (!trimmedName) {
       toast({
-        title: "Error",
-        description: "Por favor ingresa un nombre para la mesa.",
-        variant: "destructive"
-      })
-      return
+        title: 'Error',
+        description: 'Por favor ingresa un nombre para la mesa.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (tables.some((table) => table.name === trimmedName)) {
+      toast({
+        title: 'Error',
+        description: 'Ya existe una mesa con ese nombre.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
@@ -75,40 +105,54 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newTableName.trim()
-        })
-      })
+          name: newTableName.trim(),
+        }),
+      });
 
       if (response.ok) {
-        const { tab } = await response.json()
-        setTables([...tables, tab])
-        setNewTableName("")
+        const { tab } = await response.json();
+        setTables([...tables, tab]);
+        setNewTableName('');
         toast({
-          title: "Mesa creada",
+          title: 'Mesa creada',
           description: `Mesa "${tab.name}" creada exitosamente.`,
-        })
+        });
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al crear la mesa')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear la mesa');
       }
     } catch (error) {
-      console.error('Error creating table:', error)
+      console.error('Error creating table:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al crear la mesa.",
-        variant: "destructive"
-      })
+        title: 'Error',
+        description:
+          error instanceof Error ? error.message : 'Error al crear la mesa.',
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   const updateTableName = async (tableId: string, newName: string) => {
-    if (!newName.trim()) {
+    const trimmedName = newName.trim();
+
+    if (!trimmedName) {
       toast({
-        title: "Error",
-        description: "El nombre de la mesa no puede estar vacío.",
-        variant: "destructive"
-      })
-      return
+        title: 'Error',
+        description: 'El nombre de la mesa no puede estar vacío.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (
+      tables.some((table) => table.id !== tableId && table.name === trimmedName)
+    ) {
+      toast({
+        title: 'Error',
+        description: 'Ya existe una mesa con ese nombre.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
@@ -118,77 +162,160 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: newName.trim()
-        })
-      })
+          name: newName.trim(),
+        }),
+      });
 
       if (response.ok) {
-        const { tab } = await response.json()
-        setTables(tables.map(t => t.id === tableId ? tab : t))
-        setEditingTable(null)
-        setEditName("")
+        const { tab } = await response.json();
+        setTables(tables.map((t) => (t.id === tableId ? tab : t)));
+        setEditingTable(undefined);
+        setEditName('');
         toast({
-          title: "Mesa actualizada",
+          title: 'Mesa actualizada',
           description: `Nombre de mesa actualizado a "${tab.name}".`,
-        })
+        });
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al actualizar la mesa')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar la mesa');
       }
     } catch (error) {
-      console.error('Error updating table:', error)
+      console.error('Error updating table:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Error al actualizar la mesa.",
-        variant: "destructive"
-      })
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Error al actualizar la mesa.',
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   const startEditing = (table: Tab) => {
-    setEditingTable(table.id)
-    setEditName(table.name)
-  }
+    setEditingTable(table.id);
+    setEditName(table.name);
+  };
 
   const cancelEditing = () => {
-    setEditingTable(null)
-    setEditName("")
-  }
+    setEditingTable(undefined);
+    setEditName('');
+  };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+  let tableContent;
+  if (loading) {
+    tableContent = (
+      <div className="py-8 text-center text-gray-500">Cargando mesas...</div>
+    );
+  } else if (tables.length === 0) {
+    tableContent = (
+      <div className="py-8 text-center text-gray-500">
+        No hay mesas disponibles. Crea una nueva mesa.
+      </div>
+    );
+  } else {
+    tableContent = (
+      <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
+        {tables.map((table) => (
+          <div
+            key={table.id}
+            className="flex flex-col rounded-lg border p-3 transition-colors hover:bg-gray-50"
+          >
+            <div className="space-y-2">
+              {editingTable === table.id ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editName}
+                    onChange={(event) => setEditName(event.target.value)}
+                    className="h-8 flex-1"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        updateTableName(table.id, editName);
+                      } else if (event.key === 'Escape') {
+                        cancelEditing();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => updateTableName(table.id, editName)}
+                  >
+                    <Check className="size-3" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={cancelEditing}>
+                    <X className="size-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">{table.name}</h4>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEditing(table)}
+                    className="size-6 p-0"
+                  >
+                    <Edit2 className="size-3" />
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Clock className="size-3" />
+                  {formatTime(table.createdAt)}
+                </span>
+                <div className="flex justify-between">
+                  <span>{table.items?.length || 0} productos</span>
+                  <span className="font-medium text-green-600">
+                    ${table.total.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {editingTable !== table.id && (
+                <Button
+                  onClick={() => onSelect(table.id, table.name)}
+                  className="mt-2 w-full"
+                  size="sm"
+                >
+                  Seleccionar
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <Users className="size-5" />
             Seleccionar Mesa
           </DialogTitle>
         </DialogHeader>
 
         {/* Crear nueva mesa */}
-        <div className="border-b pb-4 mb-4">
-          <h3 className="text-sm font-medium mb-2">Crear nueva mesa</h3>
+        <div className="mb-4 border-b pb-4">
+          <h3 className="mb-2 text-sm font-medium">Crear nueva mesa</h3>
           <div className="flex gap-2">
             <Input
               value={newTableName}
-              onChange={(e) => setNewTableName(e.target.value)}
+              onChange={(event) => setNewTableName(event.target.value)}
               placeholder="Nombre de la mesa..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  createNewTable()
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  createNewTable();
                 }
               }}
             />
-            <Button onClick={createNewTable} className="flex-shrink-0">
-              <Plus className="h-4 w-4 mr-1" />
+            <Button onClick={createNewTable} className="shrink-0">
+              <Plus className="mr-1 size-4" />
               Crear
             </Button>
           </div>
@@ -197,96 +324,9 @@ export function TableSelector({ onSelect, onClose }: TableSelectorProps) {
         {/* Lista de mesas */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Mesas disponibles</h3>
-          
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">
-              Cargando mesas...
-            </div>
-          ) : tables.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No hay mesas disponibles. Crea una nueva mesa.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-              {tables.map((table) => (
-                <div
-                  key={table.id}
-                  className="flex flex-col p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="space-y-2">
-                    {editingTable === table.id ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="h-8 flex-1"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              updateTableName(table.id, editName)
-                            } else if (e.key === 'Escape') {
-                              cancelEditing()
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateTableName(table.id, editName)}
-                        >
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={cancelEditing}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{table.name}</h4>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing(table)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-col gap-1 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTime(table.createdAt)}
-                      </span>
-                      <div className="flex justify-between">
-                        <span>{table.items?.length || 0} productos</span>
-                        <span className="font-medium text-green-600">
-                          ${table.total.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {editingTable !== table.id && (
-                      <Button
-                        onClick={() => onSelect(table.id, table.name)}
-                        className="w-full mt-2"
-                        size="sm"
-                      >
-                        Seleccionar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {tableContent}
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

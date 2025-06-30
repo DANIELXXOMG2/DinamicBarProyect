@@ -12,92 +12,93 @@ datasource db {
 
 // Modelo para usuarios
 model User {
-  id          String    @id @default(cuid())
-  username    String    @unique
-  password    String
-  role        UserRole  @default(WAITER)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      UserRole @default(WAITER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
 enum UserRole {
-  ADMIN     // Administrador con control total
-  CASHIER   // Cajero con acceso a casi todo, requiere autorización para operaciones importantes
-  WAITER    // Mesero con acceso limitado
+  ADMIN // Administrador con control total
+  CASHIER // Cajero con acceso a casi todo, requiere autorización para operaciones importantes
+  WAITER // Mesero con acceso limitado
 }
 
 // Modelo para la información del local
 model Store {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String?
-  image       String?
-  address     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  image     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("stores")
 }
 
 // Modelo para las categorías de productos
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  icon        String?
-  shortcut    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  id        String    @id @default(cuid())
+  name      String    @unique
+  icon      String?
+  shortcut  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 
   @@map("categories")
 }
 
 // Modelo para el inventario de productos
 model Product {
-  id          String    @id @default(cuid())
-  name        String
-  purchasePrice Float   // Precio de compra
-  salePrice   Float     // Precio de venta al público
-  stock       Int       @default(0)
-  minStock    Int?      @default(20)
-  type        ProductType @default(NON_ALCOHOLIC)
-  image       String?
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  tabItems    TabItem[]
+  id            String         @id @default(cuid())
+  name          String
+  purchasePrice Float // Precio de compra
+  salePrice     Float // Precio de venta al público
+  stock         Int            @default(0)
+  minStock      Int?           @default(20)
+  type          ProductType    @default(NON_ALCOHOLIC)
+  image         String?
+  categoryId    String
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tabItems      TabItem[]
+  purchaseItems PurchaseItem[]
 
   @@map("products")
 }
 
 // Modelo para las mesas/tabs abiertas
 model Tab {
-  id          String    @id @default(cuid())
-  name        String
-  isActive    Boolean   @default(true)
-  subtotal    Float     @default(0)
-  tip         Float     @default(0)
-  total       Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  items       TabItem[]
+  id        String    @id @default(cuid())
+  name      String
+  isActive  Boolean   @default(true)
+  subtotal  Float     @default(0)
+  tip       Float     @default(0)
+  total     Float     @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  items     TabItem[]
 
   @@map("tabs")
 }
 
 // Modelo para los items de cada mesa
 model TabItem {
-  id          String   @id @default(cuid())
-  quantity    Int      @default(1)
-  tabId       String
-  productId   String
-  tab         Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  quantity  Int      @default(1)
+  tabId     String
+  productId String
+  tab       Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([tabId, productId])
   @@map("tab_items")
@@ -110,18 +111,18 @@ enum ProductType {
 
 // Modelo para las ventas completadas
 model Sale {
-  id          String    @id @default(cuid())
-  tabId       String    @unique
-  subtotal    Float
-  tip         Float     @default(0)
-  total       Float
-  paymentMethod PaymentMethod @default(CASH)
-  cashReceived Float?
-  change      Float?    @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  items       SaleItem[]
-  cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
+  id             String        @id @default(cuid())
+  tabId          String        @unique
+  subtotal       Float
+  tip            Float         @default(0)
+  total          Float
+  paymentMethod  PaymentMethod @default(CASH)
+  cashReceived   Float?
+  change         Float?        @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          SaleItem[]
+  cashRegister   CashRegister? @relation(fields: [cashRegisterId], references: [id])
   cashRegisterId String?
 
   @@map("sales")
@@ -132,7 +133,7 @@ model SaleItem {
   id          String   @id @default(cuid())
   saleId      String
   productId   String
-  productName String   // Guardamos el nombre por si el producto se elimina
+  productName String // Guardamos el nombre por si el producto se elimina
   quantity    Int
   unitPrice   Float
   totalPrice  Float
@@ -144,17 +145,17 @@ model SaleItem {
 
 // Modelo para la caja registradora
 model CashRegister {
-  id            String    @id @default(cuid())
-  openingAmount Float     @default(0)
+  id            String            @id @default(cuid())
+  openingAmount Float             @default(0)
   closingAmount Float?
-  totalSales    Float     @default(0)
-  totalCash     Float     @default(0)
-  totalCard     Float     @default(0)
-  isOpen        Boolean   @default(true)
-  openedAt      DateTime  @default(now())
+  totalSales    Float             @default(0)
+  totalCash     Float             @default(0)
+  totalCard     Float             @default(0)
+  isOpen        Boolean           @default(true)
+  openedAt      DateTime          @default(now())
   closedAt      DateTime?
-  openedBy      String?   // Usuario que abrió la caja
-  closedBy      String?   // Usuario que cerró la caja
+  openedBy      String? // Usuario que abrió la caja
+  closedBy      String? // Usuario que cerró la caja
   notes         String?
   sales         Sale[]
   transactions  CashTransaction[]
@@ -164,14 +165,14 @@ model CashRegister {
 
 // Modelo para transacciones de caja (entradas/salidas de dinero)
 model CashTransaction {
-  id              String            @id @default(cuid())
-  type            TransactionType
-  amount          Float
-  description     String
-  cashRegisterId  String
-  cashRegister    CashRegister      @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
-  createdAt       DateTime          @default(now())
-  createdBy       String?           // Usuario que realizó la transacción
+  id             String          @id @default(cuid())
+  type           TransactionType
+  amount         Float
+  description    String
+  cashRegisterId String
+  cashRegister   CashRegister    @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  createdBy      String? // Usuario que realizó la transacción
 
   @@map("cash_transactions")
 }
@@ -183,67 +184,67 @@ enum PaymentMethod {
 }
 
 enum TransactionType {
-  INCOME    // Entrada de dinero
-  EXPENSE   // Salida de dinero
-  OPENING   // Apertura de caja
-  CLOSING   // Cierre de caja
+  INCOME // Entrada de dinero
+  EXPENSE // Salida de dinero
+  OPENING // Apertura de caja
+  CLOSING // Cierre de caja
 }
 
 // Modelo para pagos
 model Payment {
-  id          String        @id @default(cuid())
-  tabId       String        
-  amount      Float
-  method      String        // Método de pago (cash, card, etc.)
-  date        DateTime      @default(now())
-  isPartial   Boolean       @default(false) // Indica si es un pago parcial
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String   @id @default(cuid())
+  tabId     String
+  amount    Float
+  method    String // Método de pago (cash, card, etc.)
+  date      DateTime @default(now())
+  isPartial Boolean  @default(false) // Indica si es un pago parcial
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("payments")
 }
 
 // Modelo para transacciones generales
 model Transaction {
-  id            String        @id @default(cuid())
-  type          String        // Tipo de transacción (PAYMENT, REFUND, etc.)
+  id            String   @id @default(cuid())
+  type          String // Tipo de transacción (PAYMENT, REFUND, etc.)
   amount        Float
-  paymentMethod String        // Método de pago utilizado
+  paymentMethod String // Método de pago utilizado
   description   String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("transactions")
 }
 
 // Modelo para proveedores
 model Supplier {
-  id          String    @id @default(cuid())
-  name        String
-  phone       String?
-  email       String?
-  address     String?
-  image       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  purchases   Purchase[]
+  id        String     @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  image     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  purchases Purchase[]
 
   @@map("suppliers")
 }
 
 // Modelo para compras
 model Purchase {
-  id            String        @id @default(cuid())
-  date          DateTime      @default(now())
+  id            String         @id @default(cuid())
+  date          DateTime       @default(now())
   supplierId    String
-  supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   subtotal      Float
-  totalIva      Float         @default(0)
+  totalIva      Float          @default(0)
   grandTotal    Float
-  paymentMethod String        @default("CASH")
+  paymentMethod String         @default("CASH")
   companyImage  String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   items         PurchaseItem[]
 
   @@map("purchases")
@@ -251,17 +252,18 @@ model Purchase {
 
 // Modelo para items de compra
 model PurchaseItem {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   purchaseId    String
-  purchase      Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  productId     String?
-  productName   String
+  productId     String
+  productImage  String?  @default("")
   quantity      Int
   purchasePrice Float
   salePrice     Float
-  iva           Float     @default(0)
+  iva           Float    @default(0)
   total         Float
-  createdAt     DateTime  @default(now())
+  purchase      Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
 
   @@map("purchase_items")
 }

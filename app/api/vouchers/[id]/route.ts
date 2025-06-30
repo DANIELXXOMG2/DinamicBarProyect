@@ -1,112 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const voucherId = params.id
-
-    // Verificar si el voucher existe
-    const voucher = await prisma.voucher.findUnique({
-      where: { id: voucherId }
-    })
-
-    if (!voucher) {
-      return NextResponse.json(
-        { error: 'Comprobante no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    // Eliminar el voucher
-    await prisma.voucher.delete({
-      where: { id: voucherId }
-    })
-
-    return NextResponse.json(
-      { message: 'Comprobante eliminado correctamente' },
-      { status: 200 }
-    )
-  } catch (error) {
-    console.error('Error deleting voucher:', error)
-    return NextResponse.json(
-      { error: 'Error al eliminar el comprobante' },
-      { status: 500 }
-    )
-  }
-}
+import { prisma as db } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const voucherId = params.id
-
-    const voucher = await prisma.voucher.findUnique({
-      where: { id: voucherId }
-    })
+    const { id } = await params;
+    const voucher = await db.voucher.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!voucher) {
       return NextResponse.json(
-        { error: 'Comprobante no encontrado' },
+        { message: 'Voucher not found' },
         { status: 404 }
-      )
+      );
     }
 
-    return NextResponse.json({ voucher })
-  } catch (error) {
-    console.error('Error fetching voucher:', error)
+    return NextResponse.json(voucher, { status: 200 });
+  } catch {
     return NextResponse.json(
-      { error: 'Error al obtener el comprobante' },
+      { message: 'Something went wrong!' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const voucherId = params.id
-    const body = await request.json()
-    const { type, amount, description, category, date } = body
-
-    // Verificar si el voucher existe
-    const existingVoucher = await prisma.voucher.findUnique({
-      where: { id: voucherId }
-    })
-
-    if (!existingVoucher) {
-      return NextResponse.json(
-        { error: 'Comprobante no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    // Actualizar el voucher
-    const voucher = await prisma.voucher.update({
-      where: { id: voucherId },
+    const { id } = await params;
+    const body = await req.json();
+    const voucher = await db.voucher.update({
+      where: {
+        id,
+      },
       data: {
-        ...(type && { type: type.toUpperCase() }),
-        ...(amount && { amount: parseFloat(amount) }),
-        ...(description && { description }),
-        ...(category && { category }),
-        ...(date && { date: new Date(date) })
-      }
-    })
+        ...body,
+      },
+    });
 
-    return NextResponse.json({ voucher })
-  } catch (error) {
-    console.error('Error updating voucher:', error)
+    return NextResponse.json(voucher, { status: 200 });
+  } catch {
     return NextResponse.json(
-      { error: 'Error al actualizar el comprobante' },
+      { message: 'Something went wrong!' },
       { status: 500 }
-    )
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await db.voucher.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json({ message: 'Voucher deleted' }, { status: 200 });
+  } catch {
+    return NextResponse.json(
+      { message: 'Something went wrong!' },
+      { status: 500 }
+    );
   }
 }

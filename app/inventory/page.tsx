@@ -1,20 +1,23 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Header } from "@/components/header"
-import { useInventoryData } from "./hooks/useInventoryData"
-import { useAdminAuth } from "./hooks/useAdminAuth"
-import { useInventoryFilters } from "./hooks/useInventoryFilters"
-import { InventoryStats } from "./components/InventoryStats"
-import { InventoryFilters } from "./components/InventoryFilters"
-import { AddProductForm } from "./components/AddProductForm"
-import { ProductsTable } from "./components/ProductsTable"
-import { AdminAuthModal } from "./components/AdminAuthModal"
-import { EditImageModal } from "./components/EditImageModal"
-import { DeleteImageModal } from "./components/DeleteImageModal"
-import { toast } from "@/hooks/use-toast"
+import { useState } from 'react';
+
+import { AddProductForm } from './components/add-product-form';
+import { AdminAuthModal } from './components/admin-auth-modal';
+import { DeleteImageModal } from './components/delete-image-modal';
+import { EditImageModal } from './components/edit-image-modal';
+import { InventoryFilters } from './components/inventory-filters';
+import { InventoryStats } from './components/inventory-stats';
+import { ProductsTable } from './components/products-table';
+import { useAdminAuth } from './hooks/use-admin-auth';
+import { useInventoryData } from './hooks/use-inventory-data';
+import { useInventoryFilters } from './hooks/use-inventory-filters';
+import { NewProduct } from './types';
+import { Header } from '@/components/header';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function InventoryPage() {
+  const { toast } = useToast();
   const {
     products,
     categories,
@@ -23,11 +26,10 @@ export default function InventoryPage() {
     addProduct,
     updateStock,
     updateProductImage,
-    deleteProductImage
-  } = useInventoryData()
+    deleteProductImage,
+  } = useInventoryData();
 
   const {
-    isAdmin,
     showAdminAuth,
     adminPassword,
     setAdminPassword,
@@ -36,8 +38,8 @@ export default function InventoryPage() {
     isVerifying,
     requireAdminAuth,
     verifyAdminPassword,
-    cancelAuth
-  } = useAdminAuth()
+    cancelAuth,
+  } = useAdminAuth();
 
   const {
     selectedCategory,
@@ -47,106 +49,117 @@ export default function InventoryPage() {
     handleCategorySelect,
     resetFilters,
     getProductCountByCategory,
-    hasActiveFilters
-  } = useInventoryFilters(products)
+    hasActiveFilters,
+  } = useInventoryFilters(products);
 
   // Estados para modales de imagen
-  const [editingImage, setEditingImage] = useState<string | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
-  
+  const [editingImage, setEditingImage] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
+
   // Productos derivados para los modales
-  const editingProduct = editingImage ? products.find(p => p.id === editingImage) : null
-  const productToDelete = showDeleteConfirm ? products.find(p => p.id === showDeleteConfirm) : null
+  const editingProduct = editingImage
+    ? products.find((p) => p.id === editingImage)
+    : null;
+  const productToDelete = showDeleteConfirm
+    ? products.find((p) => p.id === showDeleteConfirm)
+    : null;
 
   const handleStockChange = async (id: string, change: number) => {
     const action = {
-      type: change > 0 ? 'increase' as const : 'decrease' as const,
+      type: change > 0 ? ('increase' as const) : ('decrease' as const),
       productId: id,
-      amount: Math.abs(change)
-    }
+      amount: Math.abs(change),
+    };
 
     // Si no es administrador, requerir autenticación
     if (requireAdminAuth(action)) {
-      return
+      return;
     }
 
     // Si es administrador, proceder directamente
     try {
-      await updateStock(id, change)
-    } catch (error) {
+      await updateStock(id, change);
+    } catch {
       // Error handling is done in the hook
     }
-  }
+  };
 
   const handleAdminVerification = async () => {
-    const success = await verifyAdminPassword()
+    const success = await verifyAdminPassword();
     if (success && pendingAction) {
       // Ejecutar la acción pendiente
       try {
         await updateStock(
           pendingAction.productId,
-          pendingAction.type === 'increase' ? pendingAction.amount : -pendingAction.amount
-        )
-      } catch (error) {
+          pendingAction.type === 'increase'
+            ? pendingAction.amount
+            : -pendingAction.amount
+        );
+      } catch {
         // Error handling is done in the hook
       }
     }
-  }
+  };
 
-  const handleEditImage = (productId: string, currentImage?: string) => {
-    setEditingImage(productId)
-  }
+  const handleEditImage = (productId: string) => {
+    setEditingImage(productId);
+  };
 
   const handleUpdateImage = async (imageUrl: string, imageFile?: File) => {
-    if (!editingImage) return
+    if (!editingImage) return;
 
     try {
-      await updateProductImage(editingImage, imageUrl, imageFile)
-      setEditingImage(null)
-    } catch (error) {
+      await updateProductImage(editingImage, imageUrl, imageFile);
+      setEditingImage(null);
+    } catch {
       // Error handling is done in the hook
     }
-  }
+  };
 
   const handleDeleteImageRequest = (productId: string) => {
-    setShowDeleteConfirm(productId)
-  }
+    setShowDeleteConfirm(productId);
+  };
 
   const handleConfirmDeleteImage = async () => {
-    if (!showDeleteConfirm) return
+    if (!showDeleteConfirm) return;
 
     try {
-      await deleteProductImage(showDeleteConfirm)
-      setShowDeleteConfirm(null)
-    } catch (error) {
+      await deleteProductImage(showDeleteConfirm);
+      setShowDeleteConfirm(null);
+    } catch {
       // Error handling is done in the hook
     }
-  }
+  };
 
-  const handleAddProduct = async (newProduct: any, imageFile?: File) => {
-    if (!newProduct.name || !newProduct.categoryId || !newProduct.purchasePrice || !newProduct.salePrice) {
+  const handleAddProduct = async (newProduct: NewProduct, imageFile?: File) => {
+    if (
+      !newProduct.name ||
+      !newProduct.categoryId ||
+      !newProduct.purchasePrice ||
+      !newProduct.salePrice
+    ) {
       toast({
-        title: "Error",
-        description: "Por favor completa todos los campos requeridos.",
-        variant: "destructive"
-      })
-      return
+        title: 'Error',
+        description: 'Por favor completa todos los campos requeridos.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
-      await addProduct(newProduct, imageFile)
-    } catch (error) {
+      await addProduct(newProduct, imageFile);
+    } catch {
       // Error handling is done in the hook
     }
-  }
-
-
+  };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <Header />
       <main className="flex-1 overflow-auto p-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Gestión de Inventario</h1>
         </div>
 
@@ -161,7 +174,7 @@ export default function InventoryPage() {
           onCategorySelect={handleCategorySelect}
           onSearchChange={setSearchQuery}
           onResetFilters={resetFilters}
-          getCategoryProductCount={(categoryId: string) => getProductCountByCategory[categoryId] || 0}
+          getCategoryProductCount={getProductCountByCategory}
           totalProductsCount={products.length}
           hasActiveFilters={hasActiveFilters}
         />
@@ -213,5 +226,5 @@ export default function InventoryPage() {
         />
       )}
     </div>
-  )
+  );
 }

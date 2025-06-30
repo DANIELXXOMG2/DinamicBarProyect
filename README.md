@@ -13,7 +13,7 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 
 ## 📋 Requisitos Previos
 
-- Node.js 18+ 
+- Node.js 18+
 - PostgreSQL 12+
 - npm o yarn
 
@@ -22,38 +22,43 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 ### Opción 1: Con Docker (Recomendado)
 
 1. **Clonar el repositorio**
+
    ```bash
    git clone <repository-url>
    cd restaurant-pos
    ```
 
 2. **Instalar dependencias**
+
    ```bash
    npm install
    ```
 
 3. **Iniciar PostgreSQL con Docker**
+
    ```bash
    # Iniciar la base de datos
    docker-compose up -d
-   
+
    # Verificar que esté funcionando
    docker-compose ps
    ```
 
 4. **Configurar Prisma y migrar la base de datos**
+
    ```bash
    # Generar el cliente de Prisma
    npm run db:generate
-   
+
    # Crear las tablas en la base de datos
    npm run db:push
-   
+
    # Poblar con datos de ejemplo
    npm run db:seed
    ```
 
 5. **Iniciar el servidor de desarrollo**
+
    ```bash
    npm run dev
    ```
@@ -91,11 +96,13 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 ## 🔌 API Endpoints
 
 ### Store (Información del Local)
+
 - `GET /api/store` - Obtener información del local
 - `POST /api/store` - Crear/actualizar información del local
 - `PUT /api/store` - Actualizar información del local
 
 ### Inventory (Inventario)
+
 - `GET /api/inventory/categories` - Obtener categorías
 - `POST /api/inventory/categories` - Crear categoría
 - `GET /api/inventory/products` - Obtener productos
@@ -106,6 +113,7 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 - `PATCH /api/inventory/products/[id]` - Actualizar stock
 
 ### Tabs (Mesas Abiertas)
+
 - `GET /api/tabs` - Obtener mesas activas
 - `POST /api/tabs` - Crear nueva mesa
 - `GET /api/tabs/[id]` - Obtener mesa específica

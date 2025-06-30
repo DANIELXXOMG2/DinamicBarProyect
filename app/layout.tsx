@@ -1,23 +1,36 @@
-import type React from "react"
-import { ClientLayout } from "@/components/client-layout"
-import "@/app/globals.css"
+import type React from 'react';
+
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/hooks/use-auth';
+import { ClientLayout } from '@/components/client-layout';
+
+import '@/app/globals.css';
 
 export const metadata = {
-  generator: 'v0.dev'
+  generator: 'v0.dev',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+interface RootLayoutProps {
+  readonly children: React.ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es">
       <body>
-        <ClientLayout>
-          {children}
-        </ClientLayout>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <ClientLayout>{children}</ClientLayout>
+          </AuthProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

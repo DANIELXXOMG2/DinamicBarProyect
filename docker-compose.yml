@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: danielxxomg
       POSTGRES_PASSWORD: 4033
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -16,7 +16,7 @@ services:
     image: adminer
     container_name: restaurant-pos-adminer
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
       - db
     restart: unless-stopped
