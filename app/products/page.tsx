@@ -57,13 +57,16 @@ export default function ProductsPage() {
       ) {
         const categoryIndex = event.detail.categoryIndex;
         const categories = [
+          'Bebidas',
+          'Snacks',
+          'Aseo y Hogar',
+          'Cuidado Personal',
+          'Farmacia',
+          'Ferretería y Papelería',
+          'Desechables',
           'Cervezas',
           'Licores',
-          'Snaks',
-          'Gaseosas',
-          'Miscelánea',
           'Cigarrería',
-          'Cacharrería',
         ];
         const selectedCategory = categories.at(categoryIndex);
         if (selectedCategory) {

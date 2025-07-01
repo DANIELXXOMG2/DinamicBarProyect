@@ -2,10 +2,13 @@ import {
   Beer,
   Wine,
   Sandwich,
-  Coffee,
-  Package,
+  GlassWater,
   Cigarette,
   Wrench,
+  SprayCan,
+  HeartPulse,
+  Trash2,
+  ShoppingBag,
 } from 'lucide-react';
 
 interface ProductCategoriesProperties {
@@ -15,13 +18,16 @@ interface ProductCategoriesProperties {
 }
 
 const categories = [
+  { label: 'Bebidas', icon: GlassWater },
+  { label: 'Snacks', icon: Sandwich },
+  { label: 'Aseo y Hogar', icon: SprayCan },
+  { label: 'Cuidado Personal', icon: ShoppingBag },
+  { label: 'Farmacia', icon: HeartPulse },
+  { label: 'Ferretería y Papelería', icon: Wrench },
+  { label: 'Desechables', icon: Trash2 },
   { label: 'Cervezas', icon: Beer },
   { label: 'Licores', icon: Wine },
-  { label: 'Snaks', icon: Sandwich },
-  { label: 'Gaseosas', icon: Coffee },
-  { label: 'Miscelánea', icon: Package },
   { label: 'Cigarrería', icon: Cigarette },
-  { label: 'Cacharrería', icon: Wrench },
 ];
 
 export function ProductCategories({
