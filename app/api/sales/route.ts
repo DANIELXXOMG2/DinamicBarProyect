@@ -15,6 +15,21 @@ const dateRangeSchema = z.object({
   endDate: z.string().datetime(),
 });
 
+// POST /api/sales - Procesar una venta
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const validatedData = createSaleSchema.parse(body);
+    const sale = await SalesService.processSale(validatedData);
+    return NextResponse.json(sale);
+  } catch (error) {
+    console.error('Error processing sale:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
 // GET /api/sales - Obtener ventas
 export async function GET(request: NextRequest) {
   try {
@@ -56,31 +71,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { error: 'Error al obtener las ventas' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST /api/sales - Procesar nueva venta
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const validatedData = createSaleSchema.parse(body);
-
-    const sale = await SalesService.processSale(validatedData);
-    return NextResponse.json({ sale }, { status: 201 });
-  } catch (error) {
-    console.error('Error in POST /api/sales:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Error al procesar la venta' },
       { status: 500 }
     );
   }

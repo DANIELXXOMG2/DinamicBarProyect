@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,20 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { type Table, type TabItem, type Product } from '@prisma/client';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  type Table,
+  type TabItem,
+  type Product,
+  PaymentMethod,
+} from '@prisma/client';
 
 interface ProductOnTable {
   tabItemId: string;
@@ -44,8 +57,13 @@ export default function TableDetailsPage() {
     null
   );
   const [quantityToDelete, setQuantityToDelete] = useState<number | string>('');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [cashReceived, setCashReceived] = useState<number | string>('');
+
   const params = useParams();
   const { id } = params;
+  const router = useRouter();
 
   const fetchTableData = useCallback(async () => {
     if (id) {
@@ -56,7 +74,6 @@ export default function TableDetailsPage() {
         }
         const data: TableWithItems = await response.json();
         setTable(data);
-        // Simulación de productos de la mesa
         if (data.items && data.items.length > 0) {
           const productItems = data.items.map((item) => ({
             tabItemId: item.id,
@@ -117,18 +134,54 @@ export default function TableDetailsPage() {
         throw new Error(errorData.error || 'Error al eliminar el producto');
       }
 
-      // Recargar los datos de la mesa para reflejar la cantidad actualizada
       fetchTableData();
     } catch (error_) {
       if (error_ instanceof Error) {
         setError(error_.message);
       }
     } finally {
-      // Reset state and close dialog
       setIsDeleteDialogOpen(false);
       setProductToDelete(null);
       setAdminPassword('');
       setQuantityToDelete('');
+    }
+  };
+
+  const handleProcessSale = async () => {
+    setError(null); // Reset error on new attempt
+    try {
+      const response = await fetch('/api/sales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tableId: id,
+          paymentMethod,
+          cashReceived:
+            paymentMethod === 'CASH' ? Number(cashReceived) : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Error al procesar la venta';
+        if (errorMessage.includes('caja registradora')) {
+          setError(
+            'Error: No hay una caja registradora abierta. Por favor, abra una antes de procesar la venta.'
+          );
+        } else {
+          setError(errorMessage);
+        }
+        return;
+      }
+
+      setIsPaymentDialogOpen(false);
+      router.push('/tables');
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        setError(error_.message);
+      }
     }
   };
 
@@ -143,7 +196,7 @@ export default function TableDetailsPage() {
     return <div>Loading...</div>;
   }
 
-  if (error) {
+  if (error && !isPaymentDialogOpen) {
     return <div>Error: {error}</div>;
   }
 
@@ -155,7 +208,6 @@ export default function TableDetailsPage() {
     <div className="flex h-full flex-col p-4">
       <h1 className="mb-4 text-2xl font-bold">Mesa: {table.name}</h1>
 
-      {/* Lista de productos */}
       <div className="flex-1 overflow-y-auto">
         {products.map((product) => (
           <div
@@ -197,7 +249,6 @@ export default function TableDetailsPage() {
         ))}
       </div>
 
-      {/* Total y acciones */}
       <div className="border-t pt-4">
         <div className="mb-4 flex justify-between text-xl font-bold">
           <span>Total:</span>
@@ -206,7 +257,14 @@ export default function TableDetailsPage() {
         <div className="grid grid-cols-3 gap-2">
           <Button variant="outline">Precuenta</Button>
           <Button variant="outline">Dividir Cuenta</Button>
-          <Button>Cerrar Cuenta</Button>
+          <Button
+            onClick={() => {
+              setError(null);
+              setIsPaymentDialogOpen(true);
+            }}
+          >
+            Cerrar Cuenta
+          </Button>
         </div>
       </div>
 
@@ -252,16 +310,85 @@ export default function TableDetailsPage() {
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setProductToDelete(null);
-                setAdminPassword('');
-              }}
-            >
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>
-              Eliminar
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-bold">
+              Procesar Pago
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Completa los detalles para finalizar la venta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-500">Total a pagar</p>
+              <p className="text-4xl font-bold tracking-tight">
+                ${total.toLocaleString()}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="paymentMethod">Método de Pago</Label>
+              <Select
+                onValueChange={(value) =>
+                  setPaymentMethod(value as PaymentMethod)
+                }
+                defaultValue={paymentMethod}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar método" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CASH">Efectivo</SelectItem>
+                  <SelectItem value="CARD">Tarjeta</SelectItem>
+                  <SelectItem value="TRANSFER">Transferencia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {paymentMethod === 'CASH' && (
+              <div className="grid gap-2">
+                <Label htmlFor="cashReceived">Efectivo Recibido</Label>
+                <Input
+                  id="cashReceived"
+                  type="number"
+                  placeholder="0.00"
+                  value={cashReceived}
+                  onChange={(e) => setCashReceived(e.target.value)}
+                />
+              </div>
+            )}
+            {paymentMethod === 'CASH' &&
+              Number(cashReceived) > 0 &&
+              Number(cashReceived) >= total && (
+                <div className="flex items-center justify-between rounded-lg bg-gray-100 p-3">
+                  <p className="font-medium">Cambio a devolver:</p>
+                  <p className="font-bold">
+                    $ {(Number(cashReceived) - total).toLocaleString()}
+                  </p>
+                </div>
+              )}
+          </div>
+          {error && <p className="text-center text-sm text-red-500">{error}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleProcessSale}
+              disabled={
+                paymentMethod === 'CASH' && Number(cashReceived) < total
+              }
+            >
+              Pagar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
