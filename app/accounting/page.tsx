@@ -12,15 +12,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Contabilidad',
-  icons: {
-    icon: '/favicons/accounting.svg',
-  },
-};
-
 export default function AccountingPage() {
   const transactions = [
     {
