@@ -36,7 +36,9 @@ export interface SalesReport {
 
 export const SalesService = {
   // Procesar venta de una mesa
-  async processSale(data: CreateSaleData): Promise<SaleWithItems> {
+  async processSale(
+    data: CreateSaleData
+  ): Promise<SaleWithItems & { saleSkipped?: boolean; message?: string }> {
     try {
       // Obtener la mesa con sus items
       const tab = await getTable(data.tableId);
@@ -71,6 +73,11 @@ export const SalesService = {
             )
           );
 
+          // Eliminar los items de la mesa
+          await tx.tabItem.deleteMany({
+            where: { tableId: data.tableId },
+          });
+
           // Cerrar la mesa
           await tx.table.update({
             where: { id: data.tableId },
@@ -78,9 +85,23 @@ export const SalesService = {
           });
         });
 
-        throw new Error(
-          'Inventario actualizado y mesa cerrada, pero no se generó la venta por falta de caja abierta.'
-        );
+        return {
+          id: '', // O un valor que indique que no se creó la venta
+          tableId: data.tableId,
+          subtotal: 0,
+          tip: 0,
+          total: 0,
+          paymentMethod: data.paymentMethod,
+          cashReceived: 0,
+          change: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          cashRegisterId: null,
+          items: [],
+          saleSkipped: true,
+          message:
+            'Inventario actualizado y mesa cerrada, pero no se generó la venta por falta de caja abierta.',
+        };
       }
 
       // Calcular totales
@@ -144,6 +165,11 @@ export const SalesService = {
             })
           )
         );
+
+        // Eliminar los items de la mesa
+        await tx.tabItem.deleteMany({
+          where: { tableId: data.tableId },
+        });
 
         // Cerrar la mesa
         await tx.table.update({

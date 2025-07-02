@@ -19,6 +19,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   ChevronDown,
   ChevronUp,
   Package,
@@ -76,7 +82,16 @@ export function AddProductForm({
               {/* Nombre del producto */}
               <div>
                 <div className="relative">
-                  <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Nombre del Producto</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <Input
                     id="product-name"
                     placeholder="Ej: Coca-cola 350ml"
@@ -93,7 +108,16 @@ export function AddProductForm({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <div className="relative">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Categoría</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Select
                       value={newItem.categoryId}
                       onValueChange={(value) =>
@@ -115,7 +139,16 @@ export function AddProductForm({
                 </div>
                 <div>
                   <div className="relative">
-                    <Minus className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Minus className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Stock Mínimo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Input
                       id="product-min-stock"
                       type="number"
@@ -134,7 +167,16 @@ export function AddProductForm({
                 </div>
                 <div>
                   <div className="relative">
-                    <Plus className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Plus className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Stock Actual</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Input
                       id="product-stock"
                       type="number"
@@ -154,7 +196,16 @@ export function AddProductForm({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Precio de Compra</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Input
                       id="product-purchase-price"
                       type="number"
@@ -174,7 +225,16 @@ export function AddProductForm({
                 </div>
                 <div>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Precio de Venta</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Input
                       id="product-sale-price"
                       type="number"

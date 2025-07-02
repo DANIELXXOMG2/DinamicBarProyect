@@ -21,6 +21,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validatedData = createSaleSchema.parse(body);
     const sale = await SalesService.processSale(validatedData);
+
+    if (sale.saleSkipped) {
+      return NextResponse.json(
+        {
+          message: sale.message,
+          saleSkipped: true,
+        },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(sale);
   } catch (error) {
     console.error('Error processing sale:', error);

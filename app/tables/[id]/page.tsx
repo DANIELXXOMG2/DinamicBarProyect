@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -163,21 +165,32 @@ export default function TableDetailsPage() {
         }),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.error || 'Error al procesar la venta';
-        if (errorMessage.includes('caja registradora')) {
-          setError(
-            'Error: No hay una caja registradora abierta. Por favor, abra una antes de procesar la venta.'
-          );
-        } else {
-          setError(errorMessage);
-        }
+        const errorMessage = result.error || 'Error al procesar la venta';
+        setError(errorMessage);
         return;
       }
 
+      if (result.saleSkipped) {
+        toast.warning('Venta no registrada', {
+          description: result.message,
+        });
+      } else {
+        toast.success('Venta procesada', {
+          description: 'La venta se ha procesado correctamente.',
+        });
+      }
+      // Actualizar los datos de la mesa para reflejar el cierre
+      await fetchTableData();
+
+      // Redirigir después de un momento para que el usuario vea el cambio
+      setTimeout(() => {
+        router.push('/tables');
+      }, 2000);
+
       setIsPaymentDialogOpen(false);
-      router.push('/tables');
     } catch (error_) {
       if (error_ instanceof Error) {
         setError(error_.message);
@@ -197,7 +210,7 @@ export default function TableDetailsPage() {
   }
 
   if (error && !isPaymentDialogOpen) {
-    return <div>Error: {error}</div>;
+    // El manejo de errores ahora se hace arriba, así que podemos simplemente renderizar el resto de la página.
   }
 
   if (!table) {
@@ -205,8 +218,25 @@ export default function TableDetailsPage() {
   }
 
   return (
-    <div className="flex h-full flex-col p-4">
-      <h1 className="mb-4 text-2xl font-bold">Mesa: {table.name}</h1>
+    <div className="p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Mesa: {table?.name}</h1>
+        <Link href="/tables" passHref>
+          <Button variant="ghost" size="icon">
+            <X className="size-6" />
+          </Button>
+        </Link>
+      </div>
+
+      {error && (
+        <div
+          className="relative mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700"
+          role="alert"
+        >
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline"> {error}</span>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {products.map((product) => (
@@ -257,14 +287,16 @@ export default function TableDetailsPage() {
         <div className="grid grid-cols-3 gap-2">
           <Button variant="outline">Precuenta</Button>
           <Button variant="outline">Dividir Cuenta</Button>
-          <Button
-            onClick={() => {
-              setError(null);
-              setIsPaymentDialogOpen(true);
-            }}
-          >
-            Cerrar Cuenta
-          </Button>
+          {table?.isActive && (
+            <Button
+              onClick={() => {
+                setError(null);
+                setIsPaymentDialogOpen(true);
+              }}
+            >
+              Cerrar Cuenta
+            </Button>
+          )}
         </div>
       </div>
 
