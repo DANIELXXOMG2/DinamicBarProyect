@@ -43,6 +43,8 @@ export default function SettingsPage() {
   const [isCleaning, setIsCleaning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBackupImporting, setIsBackupImporting] = useState(false);
+  const [isBackupExporting, setIsBackupExporting] = useState(false);
 
   // Configuración del local
   const [storeConfig, setStoreConfig] = useState<StoreData>({
@@ -170,7 +172,7 @@ export default function SettingsPage() {
         const url = globalThis.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'exportacion-dinamicbar.xlsx';
+        a.download = 'exportacion-dinamicbar.csv';
         document.body.append(a);
         a.click();
         a.remove();
@@ -184,6 +186,70 @@ export default function SettingsPage() {
       toast.error('Error al conectar con el servidor para exportar.');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleBackupExport = async () => {
+    try {
+      setIsBackupExporting(true);
+      const response = await fetch('/api/backup/export');
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = globalThis.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup-dinamicbar-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        globalThis.URL.revokeObjectURL(url);
+        toast.success('Backup de datos exportado exitosamente');
+      } else {
+        toast.error('Error al exportar el backup de datos.');
+      }
+    } catch (error) {
+      console.error('Error exporting backup data:', error);
+      toast.error('Error al conectar con el servidor para exportar el backup.');
+    } finally {
+      setIsBackupExporting(false);
+    }
+  };
+
+  const handleBackupImport = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsBackupImporting(true);
+
+    try {
+      const fileContent = await file.text();
+      const jsonData = JSON.parse(fileContent);
+
+      const response = await fetch('/api/backup/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
+      });
+
+      if (response.ok) {
+        toast.success('Backup importado exitosamente');
+        loadInitialData(); // Recargar datos
+      } else {
+        const { error } = await response.json();
+        toast.error(`Error al importar el backup: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error importing backup data:', error);
+      toast.error('Error al conectar con el servidor para importar el backup.');
+    } finally {
+      setIsBackupImporting(false);
     }
   };
 
@@ -334,7 +400,45 @@ export default function SettingsPage() {
                   disabled={isExporting}
                 >
                   <FileDown className="mr-2 size-4" />
-                  {isExporting ? 'Exportando...' : 'Exportar a Excel'}
+                  {isExporting ? 'Exportando...' : 'Exportar a CSV'}
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileUp className="size-5" />
+                  Backup de Datos
+                </CardTitle>
+                <CardDescription>
+                  Exporta o importa todos los datos de la aplicación. Utiliza
+                  esta función para crear copias de seguridad.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <Button
+                  variant="outline"
+                  onClick={handleBackupExport}
+                  disabled={isBackupExporting}
+                >
+                  <FileDown className="mr-2 size-4" />
+                  {isBackupExporting ? 'Exportando...' : 'Exportar Backup'}
+                </Button>
+                <Button asChild variant="outline" disabled={isBackupImporting}>
+                  <label
+                    htmlFor="backup-import-file"
+                    className="cursor-pointer"
+                  >
+                    <Upload className="mr-2 size-4" />
+                    {isBackupImporting ? 'Importando...' : 'Importar Backup'}
+                    <input
+                      id="backup-import-file"
+                      type="file"
+                      className="sr-only"
+                      onChange={handleBackupImport}
+                      accept=".json"
+                    />
+                  </label>
                 </Button>
               </CardContent>
             </Card>

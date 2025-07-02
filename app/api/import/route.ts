@@ -4,11 +4,12 @@ import csv from 'csv-parser';
 import { prisma } from '@/lib/prisma';
 
 interface CsvRecord {
-  category: string;
-  product: string;
-  cost: string;
-  salePrice: string;
-  units: string;
+  CATEGORIA: string;
+  PRODUCTO: string;
+  COSTO: string;
+  'VALOR VENTA': string;
+  UNIDADES: string;
+  IMAGEN: string;
 }
 
 async function parseCsv(buffer: Buffer): Promise<CsvRecord[]> {
@@ -19,7 +20,14 @@ async function parseCsv(buffer: Buffer): Promise<CsvRecord[]> {
       .pipe(
         csv({
           separator: ';',
-          headers: ['category', 'product', 'cost', 'salePrice', 'units'],
+          headers: [
+            'CATEGORIA',
+            'PRODUCTO',
+            'COSTO',
+            'VALOR VENTA',
+            'UNIDADES',
+            'IMAGEN',
+          ],
           skipLines: 1, // Ignora la fila de encabezados del archivo
         })
       )
@@ -42,13 +50,14 @@ export async function POST(req: NextRequest) {
     const records = await parseCsv(buffer);
 
     for (const record of records) {
-      const categoryName = record.category?.trim();
-      const productName = record.product?.trim();
-      const cost = Number.parseFloat(record.cost?.replace(',', '.') || '0');
+      const categoryName = record.CATEGORIA?.trim();
+      const productName = record.PRODUCTO?.trim();
+      const cost = Number.parseFloat(record.COSTO?.replace(',', '.') || '0');
       const salePrice = Number.parseFloat(
-        record.salePrice?.replace(',', '.') || '0'
+        record['VALOR VENTA']?.replace(',', '.') || '0'
       );
-      const stock = Number.parseInt(record.units || '0', 10);
+      const stock = Number.parseInt(record.UNIDADES || '0', 10);
+      const image = record.IMAGEN?.trim() || null;
 
       if (!categoryName || !productName) {
         console.warn('Skipping record due to missing data:', record);
@@ -76,6 +85,7 @@ export async function POST(req: NextRequest) {
             purchasePrice: cost,
             salePrice,
             stock,
+            image,
             categoryId: category.id,
           },
         });
@@ -86,6 +96,7 @@ export async function POST(req: NextRequest) {
             purchasePrice: cost,
             salePrice,
             stock,
+            image,
             categoryId: category.id,
           },
         });

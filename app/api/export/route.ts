@@ -1,69 +1,56 @@
 import { NextResponse } from 'next/server';
-import * as ExcelJS from 'exceljs';
 import { prisma } from '@/lib/prisma';
+
+// Función para escapar comillas en CSV
+const escapeCsvField = (field: string | number | null) => {
+  if (field === null) {
+    return '';
+  }
+  const str = String(field);
+  // Si el campo contiene comillas, comas o saltos de línea, lo encerramos entre comillas dobles
+  if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+    // Las comillas dobles existentes se escapan con otra comilla doble
+    return `"${str.replaceAll('"', '""')}"`;
+  }
+  return str;
+};
 
 export async function GET() {
   try {
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'DinamicBar';
-    workbook.created = new Date();
-
     // Exportar Productos
-    const productsSheet = workbook.addWorksheet('Productos');
     const products = await prisma.product.findMany({
       include: { category: true },
     });
 
-    productsSheet.columns = [
-      { header: 'ID', key: 'id', width: 30 },
-      { header: 'Producto', key: 'name', width: 30 },
-      { header: 'Categoría', key: 'category', width: 20 },
-      {
-        header: 'Costo',
-        key: 'purchasePrice',
-        width: 15,
-        style: { numFmt: '0.00' },
-      },
-      {
-        header: 'Precio Venta',
-        key: 'salePrice',
-        width: 15,
-        style: { numFmt: '0.00' },
-      },
-      { header: 'Stock', key: 'stock', width: 10, style: { numFmt: '0' } },
+    const productHeaders = [
+      'CATEGORIA',
+      'PRODUCTO',
+      'COSTO',
+      'VALOR VENTA',
+      'UNIDADES',
+      'IMAGEN',
     ];
+    const productRows = products.map((product) =>
+      [
+        product.category.name,
+        product.name,
+        product.purchasePrice,
+        product.salePrice,
+        product.stock,
+        product.image || '',
+      ]
+        .map((field) => escapeCsvField(field))
+        .join(';')
+    );
 
-    for (const product of products) {
-      productsSheet.addRow({
-        ...product,
-        category: product.category.name,
-      });
-    }
+    const csvContent = [productHeaders.join(';'), ...productRows].join('\n');
 
-    // Exportar Proveedores
-    const suppliersSheet = workbook.addWorksheet('Proveedores');
-    const suppliers = await prisma.supplier.findMany();
-
-    suppliersSheet.columns = [
-      { header: 'ID', key: 'id', width: 30 },
-      { header: 'Nombre', key: 'name', width: 30 },
-      { header: 'Teléfono', key: 'phone', width: 20 },
-      { header: 'Email', key: 'email', width: 30 },
-      { header: 'Dirección', key: 'address', width: 40 },
-    ];
-
-    suppliersSheet.addRows(suppliers);
-
-    // Escribir en el buffer
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new NextResponse(buffer, {
+    return new NextResponse(csvContent, {
       status: 200,
       headers: {
-        'Content-Type':
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition':
-          'attachment; filename="exportacion-dinamicbar.xlsx"',
+          'attachment; filename="exportacion-dinamicbar.csv"',
       },
     });
   } catch (error) {

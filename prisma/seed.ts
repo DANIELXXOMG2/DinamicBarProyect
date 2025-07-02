@@ -1,6 +1,9 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 import { AuthService } from '@/lib/services/auth';
 import { generateProducts } from './seed-products';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -48,20 +51,31 @@ async function main() {
     // Crear usuarios predeterminados
     console.log('👤 Creando usuarios...');
     console.time('Creación de usuarios');
+    if (
+      !process.env.ADMIN_USER ||
+      !process.env.ADMIN_PASSWORD ||
+      !process.env.CASHIER_USER ||
+      !process.env.CASHIER_PASSWORD ||
+      !process.env.WAITER_USER ||
+      !process.env.WAITER_PASSWORD
+    ) {
+      throw new Error('Missing user credentials in .env file');
+    }
+
     await Promise.all([
       createUser({
-        username: process.env.ADMIN_USER || 'admin',
-        password: process.env.ADMIN_PASSWORD || 'admin123',
+        username: process.env.ADMIN_USER,
+        password: process.env.ADMIN_PASSWORD,
         role: UserRole.ADMIN,
       }),
       createUser({
-        username: process.env.CASHIER_USER || 'cajero',
-        password: process.env.CASHIER_PASSWORD || 'cajero123',
+        username: process.env.CASHIER_USER,
+        password: process.env.CASHIER_PASSWORD,
         role: UserRole.CASHIER,
       }),
       createUser({
-        username: process.env.WAITER_USER || 'mesero',
-        password: process.env.WAITER_PASSWORD || 'mesero123',
+        username: process.env.WAITER_USER,
+        password: process.env.WAITER_PASSWORD,
         role: UserRole.WAITER,
       }),
     ]);
