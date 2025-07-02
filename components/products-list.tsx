@@ -69,8 +69,10 @@ export function ProductsList({
 
   // Filtrado eficiente por búsqueda y categoría
   const filteredProducts = useMemo(() => {
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+    const query = searchQuery.toLowerCase().trim();
+
+    // Filtrado por búsqueda
+    if (query) {
       return products.filter((product) => {
         const nameMatch = product.name.toLowerCase().includes(query);
         const categoryMatch = product.category.name
@@ -80,7 +82,14 @@ export function ProductsList({
         return nameMatch || categoryMatch || priceMatch;
       });
     }
-    return products.filter((product) => product.category.name === category);
+
+    // Filtrado por categoría
+    if (category) {
+      return products.filter((product) => product.category.name === category);
+    }
+
+    // Sin filtros, devolver todos los productos
+    return products;
   }, [products, category, searchQuery]);
 
   const handleAddToTable = async (productId: string, quantity = 1) => {
@@ -100,7 +109,7 @@ export function ProductsList({
         throw new Error('Producto no encontrado');
       }
 
-      const response = await fetch(`/api/tabs/${selectedTable}/items`, {
+      const response = await fetch(`/api/tables/${selectedTable}/items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +117,6 @@ export function ProductsList({
         body: JSON.stringify({
           productId,
           quantity,
-          price: product.salePrice,
         }),
       });
 

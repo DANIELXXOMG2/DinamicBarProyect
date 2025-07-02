@@ -1,5 +1,7 @@
 import { Product, Category, ProductType } from '@prisma/client';
 
+export type { Category } from '@prisma/client';
+
 import { prisma } from '@/lib/prisma';
 
 export interface CreateProductData {

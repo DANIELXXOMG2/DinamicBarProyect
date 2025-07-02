@@ -9,6 +9,13 @@ export async function GET(
     const { id } = await params;
     const table = await prisma.table.findUnique({
       where: { id },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
     if (!table) {
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });

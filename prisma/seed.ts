@@ -50,24 +50,19 @@ async function main() {
     console.time('Creación de usuarios');
     await Promise.all([
       createUser({
-        username: 'admin',
-        password: 'admin123',
+        username: process.env.ADMIN_USER || 'admin',
+        password: process.env.ADMIN_PASSWORD || 'admin123',
         role: UserRole.ADMIN,
       }),
       createUser({
-        username: 'cajero',
-        password: 'cajero123',
+        username: process.env.CASHIER_USER || 'cajero',
+        password: process.env.CASHIER_PASSWORD || 'cajero123',
         role: UserRole.CASHIER,
       }),
       createUser({
-        username: 'mesero',
-        password: 'mesero123',
+        username: process.env.WAITER_USER || 'mesero',
+        password: process.env.WAITER_PASSWORD || 'mesero123',
         role: UserRole.WAITER,
-      }),
-      createUser({
-        username: process.env.ADMIN || 'danielxxomg',
-        password: process.env.ADMIN_PASS || '40334277',
-        role: UserRole.ADMIN,
       }),
     ]);
     console.timeEnd('Creación de usuarios');

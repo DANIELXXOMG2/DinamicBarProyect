@@ -9,6 +9,7 @@ import { ProductsList } from '@/components/products-list';
 import { SearchBar } from '@/components/search-bar';
 import { TableSelectionDialog } from '@/components/table-selection-dialog';
 import { Button } from '@/components/ui/button';
+import { Category } from '@/lib/services/inventory';
 
 interface TableData {
   id: string;
@@ -16,7 +17,8 @@ interface TableData {
 }
 
 export default function ProductsPage() {
-  const [activeCategory, setActiveCategory] = useState('Cervezas');
+  const [activeCategory, setActiveCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(
     {}
   );
@@ -24,6 +26,25 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
   const [isTableSelectionOpen, setTableSelectionOpen] = useState(false);
+
+  // Cargar categorías desde la API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/inventory/categories');
+        if (response.ok) {
+          const { categories: fetchedCategories } = await response.json();
+          setCategories(fetchedCategories);
+        } else {
+          console.error('Error al cargar las categorías');
+        }
+      } catch (error) {
+        console.error('Error de red al cargar las categorías:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Verificar autenticación
   useEffect(() => {
@@ -45,43 +66,6 @@ export default function ProductsPage() {
       localStorage.removeItem('user');
       globalThis.location.href = '/login';
     }
-  }, []);
-
-  // Atajos de teclado para categorías
-  useEffect(() => {
-    const handleCategoryShortcut = (event: Event) => {
-      if (
-        event instanceof CustomEvent &&
-        event.detail &&
-        typeof event.detail.categoryIndex === 'number'
-      ) {
-        const categoryIndex = event.detail.categoryIndex;
-        const categories = [
-          'Bebidas',
-          'Snacks',
-          'Aseo y Hogar',
-          'Cuidado Personal',
-          'Farmacia',
-          'Ferretería y Papelería',
-          'Desechables',
-          'Cervezas',
-          'Licores',
-          'Cigarrería',
-        ];
-        const selectedCategory = categories.at(categoryIndex);
-        if (selectedCategory) {
-          setActiveCategory(selectedCategory);
-        }
-      }
-    };
-
-    globalThis.addEventListener('category-shortcut', handleCategoryShortcut);
-    return () => {
-      globalThis.removeEventListener(
-        'category-shortcut',
-        handleCategoryShortcut
-      );
-    };
   }, []);
 
   const handleCategoryChange = (category: string) => {
@@ -160,6 +144,7 @@ export default function ProductsPage() {
 
         {/* Categorías de productos */}
         <ProductCategories
+          categories={categories}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
           categoryCounts={categoryCounts}

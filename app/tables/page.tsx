@@ -19,6 +19,7 @@ import {
   type TableGroup as TableGroupType,
   type Table,
 } from '@/lib/services/tables';
+import { type TableWithItems } from './[id]/page';
 
 const updateTableGroup = (tableId: string, groupId: string) => {
   fetch(`/api/tables/${tableId}`, {
@@ -36,7 +37,7 @@ const calculateNewGroupsOnDragEnd = (
   overId: string
 ): TableGroupType[] => {
   const newGroups = structuredClone(groups);
-  let draggedTable: Table | undefined;
+  let draggedTable: TableWithItems | undefined;
 
   // Find and remove the dragged table from its original group
   for (const group of newGroups) {
@@ -102,6 +103,7 @@ export default function TablesPage() {
   };
 
   const handleTableAdded = (newTable: Table) => {
+    const tableWithItems = { ...newTable, items: [] };
     setTableGroups((prevGroups) => {
       const newGroups = [...prevGroups];
       const groupIndex = newGroups.findIndex(
@@ -109,7 +111,7 @@ export default function TablesPage() {
       );
       if (groupIndex !== -1) {
         // eslint-disable-next-line security/detect-object-injection
-        newGroups[groupIndex].tables.push(newTable);
+        newGroups[groupIndex].tables.push(tableWithItems);
       }
       return newGroups;
     });
@@ -130,7 +132,7 @@ export default function TablesPage() {
         sensors={sensors}
         modifiers={[restrictToWindowEdges]}
       >
-        <div className="grid flex-1 auto-rows-min grid-cols-3 gap-4 p-4">
+        <div className="grid flex-1 auto-rows-min gap-4 p-4 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
           {tableGroups.map((group) => (
             <TableGroup key={group.id} group={group} />
           ))}

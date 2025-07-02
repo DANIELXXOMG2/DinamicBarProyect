@@ -117,14 +117,14 @@ export function ProductCard({
       </div>
 
       {/* Controles de cantidad y agregar */}
-      <div className="mt-auto flex items-center justify-between">
+      <div className="mt-auto flex items-center justify-between gap-2">
         {/* Selector de cantidad */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
             size="icon"
-            className="size-9 rounded-full"
+            className="size-8 shrink-0 rounded-full sm:size-9"
             onClick={handleRemove}
             disabled={quantity <= 1 || isOutOfStock}
           >
@@ -137,7 +137,7 @@ export function ProductCard({
             type="button"
             variant="outline"
             size="icon"
-            className="size-9 rounded-full"
+            className="size-8 shrink-0 rounded-full sm:size-9"
             onClick={handleAdd}
             disabled={stock <= quantity || isOutOfStock}
           >
@@ -147,7 +147,7 @@ export function ProductCard({
             type="button"
             variant="outline"
             size="icon"
-            className="size-9 rounded-full"
+            className="size-8 shrink-0 rounded-full sm:size-9"
             onClick={() => {
               if (stock >= quantity + 2) {
                 setQuantity(quantity + 2);
@@ -166,11 +166,11 @@ export function ProductCard({
         <Button
           onClick={handleAddToTable}
           disabled={!canAddToTable || isOutOfStock || stock < quantity}
-          className="h-9 bg-blue-500 px-3 text-white hover:bg-blue-600"
+          className="h-9 shrink-0 bg-blue-500 px-2 text-white hover:bg-blue-600 md:px-3"
           size="sm"
         >
-          <ShoppingCart className="mr-1 size-4" />
-          Agregar
+          <ShoppingCart className="size-4 md:mr-1" />
+          <span className="hidden md:inline">Agregar</span>
         </Button>
       </div>
     </div>

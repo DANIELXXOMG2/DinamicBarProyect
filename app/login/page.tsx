@@ -150,40 +150,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Bypass de emergencia para credenciales conocidas
-    if (
-      (username === 'admin' && password === 'admin123') ||
-      (username === 'cajero' && password === 'cajero123') ||
-      (username === 'mesero' && password === 'mesero123') ||
-      (username === 'danielxxomg' && password === '40334277')
-    ) {
-      console.log('🚨 Usando bypass de emergencia para credenciales conocidas');
-
-      // Crear usuario ficticio basado en el rol seleccionado
-      const fakeUser = {
-        id: '123456',
-        username: username,
-        role: selectedRole,
-      };
-
-      // Guardar en localStorage para persistencia
-      localStorage.setItem('user', JSON.stringify(fakeUser));
-      console.log('✅ Usuario guardado en localStorage:', fakeUser);
-
-      toast({
-        title: 'Sesión iniciada (modo emergencia)',
-        description: `Bienvenido ${username}`,
-      });
-
-      // Redirigir a la página principal con retraso para dar tiempo al toast
-      setTimeout(() => {
-        console.log('🚀 Redirigiendo a /products...');
-        globalThis.location.href = '/products';
-      }, 1000);
-
-      return;
-    }
-
     try {
       setLoading(true);
       console.log('🔄 Enviando solicitud de login para:', username);

@@ -9,12 +9,18 @@ export type TabItem = PrismaTabItem & {
   product: Product;
 };
 
-export type Table = PrismaTable & {
-  items: TabItem[];
+export type Table = PrismaTable;
+
+export type TableWithRelations = PrismaTable & {
+  tabs: {
+    items: (PrismaTabItem & {
+      product: Product;
+    })[];
+  }[];
 };
 
 export type TableGroup = PrismaTableGroup & {
-  tables: Table[];
+  tables: (PrismaTable & { items: TabItem[] })[];
 };
 
 import { prisma } from '@/lib/prisma';
@@ -86,7 +92,7 @@ async function recalculateTableTotals(tableId: string): Promise<void> {
 
 export async function getTableGroupsWithTables(): Promise<TableGroup[]> {
   try {
-    return await prisma.tableGroup.findMany({
+    const groups = await prisma.tableGroup.findMany({
       include: {
         tables: {
           include: {
@@ -99,6 +105,8 @@ export async function getTableGroupsWithTables(): Promise<TableGroup[]> {
         },
       },
     });
+
+    return groups;
   } catch (error) {
     console.error('Error getting table groups:', error);
     throw new Error('Error al obtener los grupos de mesas');

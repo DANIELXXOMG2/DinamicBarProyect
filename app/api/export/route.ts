@@ -18,9 +18,19 @@ export async function GET() {
       { header: 'ID', key: 'id', width: 30 },
       { header: 'Producto', key: 'name', width: 30 },
       { header: 'Categoría', key: 'category', width: 20 },
-      { header: 'Costo', key: 'cost', width: 15 },
-      { header: 'Precio Venta', key: 'salePrice', width: 15 },
-      { header: 'Stock', key: 'stock', width: 10 },
+      {
+        header: 'Costo',
+        key: 'purchasePrice',
+        width: 15,
+        style: { numFmt: '0.00' },
+      },
+      {
+        header: 'Precio Venta',
+        key: 'salePrice',
+        width: 15,
+        style: { numFmt: '0.00' },
+      },
+      { header: 'Stock', key: 'stock', width: 10, style: { numFmt: '0' } },
     ];
 
     for (const product of products) {
