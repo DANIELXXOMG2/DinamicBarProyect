@@ -16,7 +16,7 @@ export function TableSlot({ id, children }: TableSlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`h-24 w-40 rounded-lg border-2 border-dashed ${isOver ? 'border-primary' : 'border-gray-300'} flex items-center justify-center`}
+      className={`relative flex size-28 items-center justify-center rounded-full border-2 border-dashed ${isOver ? 'border-primary' : 'border-gray-300'}`}
     >
       {children}
     </div>

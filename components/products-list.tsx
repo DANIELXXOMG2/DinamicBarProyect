@@ -65,7 +65,8 @@ export function ProductsList({
 
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filtrado eficiente por búsqueda y categoría
   const filteredProducts = useMemo(() => {

@@ -159,17 +159,6 @@ async function main() {
     console.timeEnd('Creación de productos');
     console.log('✅ Productos creados:', products.length);
 
-    // Crear grupos de mesas
-    console.log('🪑 Creando grupos de mesas...');
-    console.time('Creación de grupos de mesas');
-    const tableGroups = await Promise.all([
-      prisma.tableGroup.create({ data: { name: 'Salón Principal' } }),
-      prisma.tableGroup.create({ data: { name: 'Terraza' } }),
-      prisma.tableGroup.create({ data: { name: 'Barra' } }),
-    ]);
-    console.timeEnd('Creación de grupos de mesas');
-    console.log('✅ Grupos de mesas creados:', tableGroups.length);
-
     // Crear proveedor de prueba
     console.log('🏪 Creando proveedor de prueba...');
     console.time('Creación de proveedor');
@@ -185,38 +174,6 @@ async function main() {
     });
     console.timeEnd('Creación de proveedor');
     console.log('✅ Proveedor de prueba creado:', testSupplier.name);
-
-    // Crear mesas
-    console.log('🪑 Creando mesas...');
-    console.time('Creación de mesas');
-    await Promise.all([
-      ...Array.from({ length: 10 }, (_, i) =>
-        prisma.table.create({
-          data: {
-            name: `Mesa ${i + 1}`,
-            tableGroupId: tableGroups[0].id,
-          },
-        })
-      ),
-      ...Array.from({ length: 5 }, (_, i) =>
-        prisma.table.create({
-          data: {
-            name: `Terraza ${i + 1}`,
-            tableGroupId: tableGroups[1].id,
-          },
-        })
-      ),
-      ...Array.from({ length: 3 }, (_, i) =>
-        prisma.table.create({
-          data: {
-            name: `Barra ${i + 1}`,
-            tableGroupId: tableGroups[2].id,
-          },
-        })
-      ),
-    ]);
-    console.timeEnd('Creación de mesas');
-    console.log('✅ Mesas creadas');
 
     console.timeEnd('Tiempo total de seed');
     console.log('🎉 Seed completado exitosamente!');

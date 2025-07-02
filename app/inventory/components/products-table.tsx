@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Edit,
   Trash2,
+  ArrowUpDown,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -23,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useSortableData } from '../hooks/use-sortable-data';
 
 interface ProductsTableProperties {
   readonly products: readonly Product[];
@@ -41,6 +43,8 @@ export function ProductsTable({
   onDeleteImage,
   hasFilters,
 }: ProductsTableProperties) {
+  const { sortedProducts, requestSort } = useSortableData(products);
+
   const noProductsMessage = hasFilters
     ? 'No hay productos que coincidan con los filtros'
     : 'No hay productos en el inventario';
@@ -54,14 +58,40 @@ export function ProductsTable({
           <TableHeader>
             <TableRow>
               <TableHead>Imagen</TableHead>
-              <TableHead>Producto</TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => requestSort('name')}>
+                  Producto
+                  <ArrowUpDown className="ml-2 size-4" />
+                </Button>
+              </TableHead>
               <TableHead>Categoría</TableHead>
-              <TableHead>Stock</TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => requestSort('stock')}>
+                  Stock
+                  <ArrowUpDown className="ml-2 size-4" />
+                </Button>
+              </TableHead>
               <TableHead>Stock Mín.</TableHead>
               <TableHead>Precio Compra</TableHead>
-              <TableHead>Valor Total</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => requestSort('totalValue')}
+                >
+                  Valor Total
+                  <ArrowUpDown className="ml-2 size-4" />
+                </Button>
+              </TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Precio Venta</TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => requestSort('salePrice')}
+                >
+                  Precio Venta
+                  <ArrowUpDown className="ml-2 size-4" />
+                </Button>
+              </TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -84,8 +114,8 @@ export function ProductsTable({
               </TableRow>
             )}
             {!loading &&
-              products.length > 0 &&
-              products.map((item) => (
+              sortedProducts.length > 0 &&
+              sortedProducts.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <div className="group relative">

@@ -14,6 +14,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { AddTableDialog } from '@/components/tables/add-table-dialog';
+import { AddTableGroupDialog } from '@/components/tables/add-table-group-dialog';
 import { TableGroup } from '@/components/tables/table-group';
 import {
   type TableGroup as TableGroupType,
@@ -22,7 +23,7 @@ import {
 import { type TableWithItems } from './[id]/page';
 
 const updateTableGroup = (tableId: string, groupId: string) => {
-  fetch(`/api/tables/${tableId}`, {
+  return fetch(`/api/tables/${tableId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -70,6 +71,7 @@ const calculateNewGroupsOnDragEnd = (
 export default function TablesPage() {
   const [tableGroups, setTableGroups] = useState<TableGroupType[]>([]);
   const [isAddTableDialogOpen, setIsAddTableDialogOpen] = useState(false);
+  const [isAddGroupDialogOpen, setIsAddGroupDialogOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/tables')
@@ -109,7 +111,13 @@ export default function TablesPage() {
       const groupIndex = newGroups.findIndex(
         (g) => g.id === newTable.tableGroupId
       );
-      if (groupIndex !== -1) {
+      if (groupIndex === -1) {
+        // If group not found, refetch all groups
+        fetch('/api/tables')
+          .then((res) => res.json())
+          .then(setTableGroups)
+          .catch(console.error);
+      } else {
         // eslint-disable-next-line security/detect-object-injection
         newGroups[groupIndex].tables.push(tableWithItems);
       }
@@ -118,23 +126,45 @@ export default function TablesPage() {
     setIsAddTableDialogOpen(false);
   };
 
+  const handleGroupAdded = (newGroup: TableGroupType) => {
+    setTableGroups((prevGroups) => [
+      ...prevGroups,
+      { ...newGroup, tables: [] },
+    ]);
+    setIsAddGroupDialogOpen(false);
+  };
+
+  const handleGroupDeleted = (groupId: string) => {
+    setTableGroups((prevGroups) => prevGroups.filter((g) => g.id !== groupId));
+  };
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b p-4">
         <h1 className="text-2xl font-bold">Mesas</h1>
-        <Button onClick={() => setIsAddTableDialogOpen(true)}>
-          <Plus className="mr-2 size-4" />
-          Agregar Mesa
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsAddGroupDialogOpen(true)}>
+            <Plus className="mr-2 size-4" />
+            Agregar Grupo
+          </Button>
+          <Button onClick={() => setIsAddTableDialogOpen(true)}>
+            <Plus className="mr-2 size-4" />
+            Agregar Mesa
+          </Button>
+        </div>
       </header>
       <DndContext
         onDragEnd={handleDragEnd}
         sensors={sensors}
         modifiers={[restrictToWindowEdges]}
       >
-        <div className="grid flex-1 auto-rows-min gap-4 p-4 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
+        <div className="grid flex-1 auto-rows-min gap-x-24 p-4 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
           {tableGroups.map((group) => (
-            <TableGroup key={group.id} group={group} />
+            <TableGroup
+              key={group.id}
+              group={group}
+              onGroupDeleted={handleGroupDeleted}
+            />
           ))}
         </div>
       </DndContext>
@@ -143,6 +173,11 @@ export default function TablesPage() {
         onClose={() => setIsAddTableDialogOpen(false)}
         onTableAdded={handleTableAdded}
         tableGroups={tableGroups}
+      />
+      <AddTableGroupDialog
+        isOpen={isAddGroupDialogOpen}
+        onClose={() => setIsAddGroupDialogOpen(false)}
+        onGroupAdded={handleGroupAdded}
       />
     </div>
   );

@@ -169,8 +169,8 @@ export function ProductCard({
           className="h-9 shrink-0 bg-blue-500 px-2 text-white hover:bg-blue-600 md:px-3"
           size="sm"
         >
-          <ShoppingCart className="size-4 md:mr-1" />
-          <span className="hidden md:inline">Agregar</span>
+          <ShoppingCart className="size-4 sm:mr-1" />
+          <span className="hidden sm:inline">Agregar</span>
         </Button>
       </div>
     </div>

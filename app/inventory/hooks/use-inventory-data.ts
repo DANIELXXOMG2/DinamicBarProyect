@@ -180,6 +180,13 @@ export function useInventoryData() {
 
   useEffect(() => {
     loadData();
+
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   return {

@@ -3,16 +3,28 @@
 import { useState } from 'react';
 import { DraggableTable } from './draggable-table';
 import { type TableGroup as TableGroupType } from '@/lib/services/tables';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { TableSlot } from './table-slot';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface TableGroupProps {
   readonly group: TableGroupType;
+  readonly onGroupDeleted: (groupId: string) => void;
 }
 
 const MAX_SLOTS = 6;
 
-export function TableGroup({ group }: TableGroupProps) {
+export function TableGroup({ group, onGroupDeleted }: TableGroupProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [groupName, setGroupName] = useState(group.name);
 
@@ -29,6 +41,19 @@ export function TableGroup({ group }: TableGroupProps) {
       },
       body: JSON.stringify({ name: groupName }),
     });
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/table-groups/${group.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        onGroupDeleted(group.id);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const tableSlots = group.tables.map((table) => ({
@@ -58,8 +83,30 @@ export function TableGroup({ group }: TableGroupProps) {
         <button onClick={() => setIsEditing(true)} className="ml-2">
           <Pencil className="size-5 text-gray-500" />
         </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button className="ml-2">
+              <Trash2 className="size-5 text-red-500" />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. Esto eliminará permanentemente
+                el grupo de mesas y todas las mesas asociadas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-x-24 gap-y-6">
         {tableSlots.map((table) => (
           <TableSlot key={table.slotId} id={table.slotId}>
             <DraggableTable table={table} />

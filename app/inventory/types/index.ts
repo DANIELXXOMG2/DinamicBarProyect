@@ -42,6 +42,12 @@ export type ProductType = 'NON_ALCOHOLIC' | 'ALCOHOLIC' | 'FOOD';
 // Métodos de imagen
 export type ImageMethod = 'url' | 'file' | 'upload';
 
+// Tipos para ordenación
+export interface SortConfig {
+  key: keyof Product | 'totalValue';
+  direction: 'ascending' | 'descending';
+}
+
 // Acciones de stock
 export type StockAction = 'increase' | 'decrease';
 

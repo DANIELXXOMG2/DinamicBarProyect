@@ -38,14 +38,6 @@ export const SalesService = {
   // Procesar venta de una mesa
   async processSale(data: CreateSaleData): Promise<SaleWithItems> {
     try {
-      // Verificar que hay una caja abierta
-      const cashRegister = await CashRegisterService.getCurrentCashRegister();
-      if (!cashRegister) {
-        throw new Error(
-          'No hay una caja registradora abierta. Debe abrir la caja primero.'
-        );
-      }
-
       // Obtener la mesa con sus items
       const tab = await getTable(data.tableId);
       if (!tab) {
@@ -58,6 +50,37 @@ export const SalesService = {
 
       if (tab.items.length === 0) {
         throw new Error('La mesa no tiene productos');
+      }
+
+      // Verificar que hay una caja abierta
+      const cashRegister = await CashRegisterService.getCurrentCashRegister();
+      if (!cashRegister) {
+        // Si no hay caja, descontar stock, cerrar mesa y avisar
+        await prisma.$transaction(async (tx) => {
+          // Actualizar stock de productos
+          await Promise.all(
+            tab.items.map((item: TabItem) =>
+              tx.product.update({
+                where: { id: item.productId },
+                data: {
+                  stock: {
+                    decrement: item.quantity,
+                  },
+                },
+              })
+            )
+          );
+
+          // Cerrar la mesa
+          await tx.table.update({
+            where: { id: data.tableId },
+            data: { isActive: false },
+          });
+        });
+
+        throw new Error(
+          'Inventario actualizado y mesa cerrada, pero no se generó la venta por falta de caja abierta.'
+        );
       }
 
       // Calcular totales

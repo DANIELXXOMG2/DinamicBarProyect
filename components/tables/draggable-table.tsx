@@ -41,7 +41,7 @@ export function DraggableTable({ table }: DraggableTableProps) {
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      className={`flex size-full cursor-grab items-center justify-center rounded-lg p-4 shadow-md transition-colors duration-200 ${
+      className={`flex aspect-square size-24 cursor-grab items-center justify-center rounded-full p-4 shadow-md transition-colors duration-200 ${
         table.items.length > 0
           ? 'bg-red-500 text-white'
           : 'bg-white text-gray-800'
