@@ -69,46 +69,41 @@ const handleTableSwap = (
     overId
   );
 
-  if (!activeGroup || !activeTable || !overGroup || !overTable) return groups;
+  if (!activeGroup || !activeTable || !overGroup || !overTable) return null;
+
+  const newGroups = groups.map((group) => ({
+    ...group,
+    tables: [...group.tables],
+  }));
+
+  const newActiveGroup = newGroups.find((g) => g.id === activeGroup.id);
+  const newOverGroup = newGroups.find((g) => g.id === overGroup.id);
+
+  if (!newActiveGroup || !newOverGroup) return null;
+
+  const activeTableIndex = newActiveGroup.tables.findIndex(
+    (t) => t.id === activeId
+  );
+  const overTableIndex = newOverGroup.tables.findIndex(
+    (t) => t.id === overTable.id
+  );
 
   if (activeGroup.id === overGroup.id) {
-    const activeTableIndex = activeGroup.tables.findIndex(
-      (t) => t.id === activeId
-    );
-    const overTableIndex = overGroup.tables.findIndex(
-      (t) => t.id === overTable.id
-    );
     if (activeTableIndex === overTableIndex) return null;
-
-    const newTables = [...activeGroup.tables];
-    const [removed] = newTables.splice(activeTableIndex, 1);
-    newTables.splice(overTableIndex, 0, removed);
-    activeGroup.tables = newTables;
+    const [removed] = newActiveGroup.tables.splice(activeTableIndex, 1);
+    newActiveGroup.tables.splice(overTableIndex, 0, removed);
   } else {
-    const activeTableIndex = activeGroup.tables.findIndex(
-      (t) => t.id === activeId
-    );
-    const overTableIndex = overGroup.tables.findIndex(
-      (t) => t.id === overTable.id
-    );
+    const [active] = newActiveGroup.tables.splice(activeTableIndex, 1);
+    const [over] = newOverGroup.tables.splice(overTableIndex, 1);
 
-    const newActiveTables = [...activeGroup.tables];
-    const newOverTables = [...overGroup.tables];
-
-    const [active] = newActiveTables.splice(activeTableIndex, 1);
-    const [over] = newOverTables.splice(overTableIndex, 1);
-
-    newActiveTables.splice(activeTableIndex, 0, over);
-    newOverTables.splice(overTableIndex, 0, active);
-
-    activeGroup.tables = newActiveTables;
-    overGroup.tables = newOverTables;
+    newActiveGroup.tables.splice(activeTableIndex, 0, over);
+    newOverGroup.tables.splice(overTableIndex, 0, active);
 
     updateTableGroup(active.id, overGroup.id);
     updateTableGroup(over.id, activeGroup.id);
   }
 
-  return groups;
+  return newGroups;
 };
 
 const handleMoveToEmptySlot = (
@@ -121,19 +116,31 @@ const handleMoveToEmptySlot = (
     activeId
   );
   const targetGroupId = overId.split('-')[1];
-  const targetGroup = groups.find((g) => g.id === targetGroupId);
 
-  if (!activeGroup || !activeTable || !targetGroup) return groups;
+  if (!activeGroup || !activeTable || !targetGroupId) return null;
 
-  const newActiveTables = activeGroup.tables.filter((t) => t.id !== activeId);
-  const newTargetTables = [...targetGroup.tables, activeTable];
+  const newGroups = groups.map((group) => ({
+    ...group,
+    tables: [...group.tables],
+  }));
 
-  activeGroup.tables = newActiveTables;
-  targetGroup.tables = newTargetTables;
+  const newActiveGroup = newGroups.find((g) => g.id === activeGroup.id);
+  const newTargetGroup = newGroups.find((g) => g.id === targetGroupId);
 
-  updateTableGroup(activeTable.id, targetGroup.id);
+  if (!newActiveGroup || !newTargetGroup) return null;
 
-  return groups;
+  const activeTableIndex = newActiveGroup.tables.findIndex(
+    (t) => t.id === activeId
+  );
+
+  const [movedTable] = newActiveGroup.tables.splice(activeTableIndex, 1);
+  newTargetGroup.tables.push(movedTable);
+
+  if (activeGroup.id !== targetGroupId) {
+    updateTableGroup(movedTable.id, targetGroupId);
+  }
+
+  return newGroups;
 };
 
 const calculateNewGroupsOnDragEnd = (
