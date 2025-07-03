@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { SplitBillDialog } from '@/components/tables/split-bill-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -149,6 +150,23 @@ export default function TableDetailsPage() {
     }
   };
 
+  const handleSplitSubmit = (selectedItems: readonly ProductOnTable[]) => {
+    // Aquí puedes manejar la lógica de pago para los items seleccionados
+    console.log('Pagar los siguientes items:', selectedItems);
+    // Por ahora, solo cerramos el diálogo y actualizamos el estado
+    // En una implementación real, llamarías a una API para procesar el pago parcial
+    const paidAmount = selectedItems.reduce(
+      (acc, item) => acc + item.quantity * item.price,
+      0
+    );
+    // Simular que se ha pagado
+    alert(`Se han pagado $${paidAmount.toLocaleString()}`);
+    // Aquí podrías querer actualizar la venta para reflejar el pago parcial
+    // y eliminar los items pagados de la lista.
+    // Por simplicidad, recargaremos los datos.
+    fetchTableData();
+  };
+
   const handleProcessSale = async () => {
     setError(null); // Reset error on new attempt
     try {
@@ -284,10 +302,13 @@ export default function TableDetailsPage() {
           <span>Total:</span>
           <span>${total.toLocaleString()}</span>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Button variant="outline">Precuenta</Button>
-          <Button variant="outline">Dividir Cuenta</Button>
-          {table?.isActive && (
+        {table.isActive ? (
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline">Precuenta</Button>
+            <SplitBillDialog
+              details={products}
+              onSplitSubmit={handleSplitSubmit}
+            />
             <Button
               onClick={() => {
                 setError(null);
@@ -296,8 +317,12 @@ export default function TableDetailsPage() {
             >
               Cerrar Cuenta
             </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="text-center text-lg font-semibold text-gray-500">
+            Mesa cerrada.
+          </div>
+        )}
       </div>
 
       <AlertDialog

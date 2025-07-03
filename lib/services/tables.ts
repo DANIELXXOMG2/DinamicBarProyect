@@ -260,6 +260,12 @@ export async function addItemToTable(
         })
       : prisma.tabItem.create({ data }));
 
+    // Reactivar la mesa si estaba inactiva
+    await prisma.table.update({
+      where: { id: data.tableId },
+      data: { isActive: true },
+    });
+
     await recalculateTableTotals(data.tableId);
 
     const updatedTable = await getTable(data.tableId);
