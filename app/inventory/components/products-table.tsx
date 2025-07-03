@@ -10,6 +10,8 @@ import {
 import Image from 'next/image';
 
 import { Product } from '../types/index';
+import { EditableCell } from './editable-cell';
+import { useToast } from '@/components/ui/use-toast';
 import {
   ProductUtils as ProductUtilities,
   FormatUtils as FormatUtilities,
@@ -35,6 +37,25 @@ interface ProductsTableProperties {
   readonly hasFilters: boolean;
 }
 
+async function updateProductField(
+  productId: string,
+  field: string,
+  value: string | number
+): Promise<void> {
+  const response = await fetch(`/api/inventory/products/${productId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ [field]: value }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to update product');
+  }
+}
+
 export function ProductsTable({
   products,
   loading,
@@ -43,6 +64,7 @@ export function ProductsTable({
   onDeleteImage,
   hasFilters,
 }: ProductsTableProperties) {
+  const { toast } = useToast();
   const { sortedProducts, requestSort } = useSortableData(products);
 
   const noProductsMessage = hasFilters
@@ -164,8 +186,44 @@ export function ProductsTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.category.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <EditableCell
+                      initialValue={item.name}
+                      onSave={async (newValue) => {
+                        try {
+                          await updateProductField(item.id, 'name', newValue);
+                          toast({
+                            description: 'Nombre del producto actualizado.',
+                          });
+                        } catch {
+                          toast({
+                            variant: 'destructive',
+                            description: 'No se pudo actualizar el nombre.',
+                          });
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <EditableCell
+                      initialValue={item.category.name}
+                      onSave={async (newValue) => {
+                        try {
+                          await updateProductField(
+                            item.id,
+                            'category',
+                            newValue
+                          );
+                          toast({ description: 'Categoría actualizada.' });
+                        } catch {
+                          toast({
+                            variant: 'destructive',
+                            description: 'No se pudo actualizar la categoría.',
+                          });
+                        }
+                      }}
+                    />
+                  </TableCell>
                   <TableCell>
                     <span
                       className={
@@ -179,7 +237,27 @@ export function ProductsTable({
                   </TableCell>
                   <TableCell>{item.minStock || 0}</TableCell>
                   <TableCell>
-                    {ProductUtilities.formatPrice(item.purchasePrice)}
+                    <EditableCell
+                      initialValue={String(item.purchasePrice)}
+                      onSave={async (newValue) => {
+                        try {
+                          await updateProductField(
+                            item.id,
+                            'purchasePrice',
+                            Number(newValue)
+                          );
+                          toast({
+                            description: 'Precio de compra actualizado.',
+                          });
+                        } catch {
+                          toast({
+                            variant: 'destructive',
+                            description:
+                              'No se pudo actualizar el precio de compra.',
+                          });
+                        }
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     {FormatUtilities.formatCurrency(
@@ -197,7 +275,27 @@ export function ProductsTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    {ProductUtilities.formatPrice(item.salePrice)}
+                    <EditableCell
+                      initialValue={String(item.salePrice)}
+                      onSave={async (newValue) => {
+                        try {
+                          await updateProductField(
+                            item.id,
+                            'salePrice',
+                            Number(newValue)
+                          );
+                          toast({
+                            description: 'Precio de venta actualizado.',
+                          });
+                        } catch {
+                          toast({
+                            variant: 'destructive',
+                            description:
+                              'No se pudo actualizar el precio de venta.',
+                          });
+                        }
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

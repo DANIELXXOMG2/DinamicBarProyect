@@ -20,7 +20,7 @@ export const IMAGE_CONFIG = {
 } as const;
 
 export const STOCK_THRESHOLDS = {
-  LOW_STOCK: 5,
+  LOW_STOCK: 10,
   LOW_STOCK_WARNING: 0,
   MINIMUM_STOCK_DEFAULT: 0,
 } as const;
@@ -29,7 +29,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: '/api/inventory/products',
   CATEGORIES: '/api/inventory/categories',
   UPLOAD: '/api/upload',
-  AUTH: '/api/auth',
+  AUTH: '/api/auth/admin',
 } as const;
 
 export const FORM_VALIDATION = {

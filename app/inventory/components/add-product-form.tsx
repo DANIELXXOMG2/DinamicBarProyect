@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -81,7 +82,8 @@ export function AddProductForm({
             <div className="space-y-6 md:col-span-2">
               {/* Nombre del producto */}
               <div>
-                <div className="relative">
+                <Label htmlFor="product-name">Nombre del Producto</Label>
+                <div className="relative mt-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -107,7 +109,8 @@ export function AddProductForm({
               {/* Primera fila de inputs */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <div className="relative">
+                  <Label htmlFor="product-category">Categoría</Label>
+                  <div className="relative mt-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -124,7 +127,7 @@ export function AddProductForm({
                         handleInputChange('categoryId', value)
                       }
                     >
-                      <SelectTrigger className="pl-10">
+                      <SelectTrigger id="product-category" className="pl-10">
                         <SelectValue placeholder="Selecciona" />
                       </SelectTrigger>
                       <SelectContent>
@@ -138,7 +141,8 @@ export function AddProductForm({
                   </div>
                 </div>
                 <div>
-                  <div className="relative">
+                  <Label htmlFor="product-min-stock">Stock Mínimo</Label>
+                  <div className="relative mt-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -166,7 +170,8 @@ export function AddProductForm({
                   </div>
                 </div>
                 <div>
-                  <div className="relative">
+                  <Label htmlFor="product-stock">Stock Actual</Label>
+                  <div className="relative mt-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -195,7 +200,10 @@ export function AddProductForm({
               {/* Segunda fila de inputs */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <div className="relative">
+                  <Label htmlFor="product-purchase-price">
+                    Precio de Compra
+                  </Label>
+                  <div className="relative mt-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -224,7 +232,8 @@ export function AddProductForm({
                   </div>
                 </div>
                 <div>
-                  <div className="relative">
+                  <Label htmlFor="product-sale-price">Precio de Venta</Label>
+                  <div className="relative mt-1">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

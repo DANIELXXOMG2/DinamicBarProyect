@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 import { InventoryService } from '../services/inventory-service';
 import { PendingAction } from '../types/index';
 
 export function useAdminAuth() {
+  const { user } = useAuth();
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -11,27 +13,9 @@ export function useAdminAuth() {
   );
   const [authError, setAuthError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    // Verificar si el usuario tiene rol de administrador
-    const storedUser = localStorage.getItem('user');
-
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setIsAdmin(user.role === 'ADMIN');
-      } catch (error) {
-        console.error('Error parsing user:', error);
-        setIsAdmin(false);
-      }
-    } else {
-      setIsAdmin(false);
-    }
-  }, []);
 
   const requireAdminAuth = (action: PendingAction) => {
-    if (isAdmin) {
+    if (user?.role === 'ADMIN') {
       return false; // No necesita autenticación
     }
 
@@ -79,7 +63,6 @@ export function useAdminAuth() {
   };
 
   return {
-    isAdmin,
     showAdminAuth,
     adminPassword,
     pendingAction,

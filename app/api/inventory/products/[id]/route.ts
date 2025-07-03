@@ -97,7 +97,62 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/inventory/products/[id] - Actualizar stock o imagen
+const generalUpdateBodySchema = z.object({
+  name: z.string().min(1).optional(),
+  purchasePrice: z.number().positive().optional(),
+  salePrice: z.number().positive().optional(),
+  category: z.string().optional(),
+});
+
+interface UpdateData {
+  name?: string;
+  purchasePrice?: number;
+  salePrice?: number;
+  categoryId?: string;
+  image?: string | null;
+}
+
+async function handleGeneralUpdate(id: string, body: unknown) {
+  const parsedBody = generalUpdateBodySchema.parse(body);
+  const { name, category, purchasePrice, salePrice } = parsedBody;
+  let updateData: UpdateData = {};
+  if (name) updateData.name = name;
+  if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice;
+  if (salePrice !== undefined) updateData.salePrice = salePrice;
+  if (category) {
+    const categoryRecord =
+      await InventoryService.findOrCreateCategory(category);
+    updateData.categoryId = categoryRecord.id;
+  }
+  return InventoryService.updateProduct(id, updateData);
+}
+
+async function handleImageUpdate(id: string, body: unknown) {
+  const { action, image } = imageUpdateSchema.parse(body);
+  return InventoryService.updateProduct(id, {
+    image: action === 'updateImage' ? image : null,
+  });
+}
+
+async function handleStockUpdate(id: string, body: unknown) {
+  const { action, quantity } = stockUpdateSchema.parse(body);
+  switch (action) {
+    case 'set': {
+      return InventoryService.updateStock(id, quantity);
+    }
+    case 'increase': {
+      return InventoryService.increaseStock(id, quantity);
+    }
+    case 'decrease': {
+      return InventoryService.decreaseStock(id, quantity);
+    }
+    default: {
+      throw new Error('Acción de stock no válida');
+    }
+  }
+}
+
+// PATCH /api/inventory/products/[id] - Actualizar stock, imagen o campos del producto
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -105,43 +160,26 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { action } = body;
+    const { action, name, category, purchasePrice, salePrice } = body;
 
     let product;
 
-    // Manejar acciones de imagen
-    if (action === 'updateImage' || action === 'removeImage') {
-      const { image } = imageUpdateSchema.parse(body);
-
-      if (action === 'updateImage') {
-        product = await InventoryService.updateProduct(id, { image });
-      } else if (action === 'removeImage') {
-        product = await InventoryService.updateProduct(id, { image: null });
-      }
+    if (
+      name ||
+      category ||
+      purchasePrice !== undefined ||
+      salePrice !== undefined
+    ) {
+      product = await handleGeneralUpdate(id, body);
+    } else if (action === 'updateImage' || action === 'removeImage') {
+      product = await handleImageUpdate(id, body);
+    } else if (action) {
+      product = await handleStockUpdate(id, body);
     } else {
-      // Manejar acciones de stock
-      const { quantity } = stockUpdateSchema.parse(body);
-
-      switch (action) {
-        case 'set': {
-          product = await InventoryService.updateStock(id, quantity);
-          break;
-        }
-        case 'increase': {
-          product = await InventoryService.increaseStock(id, quantity);
-          break;
-        }
-        case 'decrease': {
-          product = await InventoryService.decreaseStock(id, quantity);
-          break;
-        }
-        default: {
-          return NextResponse.json(
-            { error: 'Acción no válida' },
-            { status: 400 }
-          );
-        }
-      }
+      return NextResponse.json(
+        { error: 'Acción no especificada' },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ product });

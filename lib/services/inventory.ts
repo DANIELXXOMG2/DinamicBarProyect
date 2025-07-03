@@ -37,6 +37,25 @@ export interface ProductWithCategory extends Product {
 }
 
 export const InventoryService = {
+  async findOrCreateCategory(categoryName: string): Promise<Category> {
+    try {
+      const existingCategory = await prisma.category.findUnique({
+        where: { name: categoryName },
+      });
+
+      if (existingCategory) {
+        return existingCategory;
+      }
+
+      return await prisma.category.create({
+        data: { name: categoryName },
+      });
+    } catch (error) {
+      console.error('Error finding or creating category:', error);
+      throw new Error('Error al buscar o crear la categoría');
+    }
+  },
+
   // Categorías
   async getCategories(): Promise<Category[]> {
     try {
