@@ -7,6 +7,7 @@ import {
   useSensors,
   PointerSensor,
   type DragEndEvent,
+  closestCorners,
 } from '@dnd-kit/core';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { Plus } from 'lucide-react';
@@ -20,7 +21,6 @@ import {
   type TableGroup as TableGroupType,
   type Table,
 } from '@/lib/services/tables';
-import { type TableWithItems } from './[id]/page';
 
 const updateTableGroup = (tableId: string, groupId: string) => {
   return fetch(`/api/tables/${tableId}`, {
@@ -32,40 +32,122 @@ const updateTableGroup = (tableId: string, groupId: string) => {
   }).catch(console.error);
 };
 
+const findGroupAndTableById = (groups: TableGroupType[], tableId: string) => {
+  for (const group of groups) {
+    const table = group.tables.find((t) => t.id === tableId);
+    if (table) {
+      return { group, table };
+    }
+  }
+  return { group: null, table: null };
+};
+
+const findGroupAndTableByOverId = (
+  groups: TableGroupType[],
+  overId: string
+) => {
+  for (const group of groups) {
+    const table = group.tables.find((t) => `${group.id}-${t.id}` === overId);
+    if (table) {
+      return { group, table };
+    }
+  }
+  return { group: null, table: null };
+};
+
+const handleTableSwap = (
+  groups: TableGroupType[],
+  activeId: string,
+  overId: string
+) => {
+  const { group: activeGroup, table: activeTable } = findGroupAndTableById(
+    groups,
+    activeId
+  );
+  const { group: overGroup, table: overTable } = findGroupAndTableByOverId(
+    groups,
+    overId
+  );
+
+  if (!activeGroup || !activeTable || !overGroup || !overTable) return groups;
+
+  if (activeGroup.id === overGroup.id) {
+    const activeTableIndex = activeGroup.tables.findIndex(
+      (t) => t.id === activeId
+    );
+    const overTableIndex = overGroup.tables.findIndex(
+      (t) => t.id === overTable.id
+    );
+    if (activeTableIndex === overTableIndex) return null;
+
+    const newTables = [...activeGroup.tables];
+    const [removed] = newTables.splice(activeTableIndex, 1);
+    newTables.splice(overTableIndex, 0, removed);
+    activeGroup.tables = newTables;
+  } else {
+    const activeTableIndex = activeGroup.tables.findIndex(
+      (t) => t.id === activeId
+    );
+    const overTableIndex = overGroup.tables.findIndex(
+      (t) => t.id === overTable.id
+    );
+
+    const newActiveTables = [...activeGroup.tables];
+    const newOverTables = [...overGroup.tables];
+
+    const [active] = newActiveTables.splice(activeTableIndex, 1);
+    const [over] = newOverTables.splice(overTableIndex, 1);
+
+    newActiveTables.splice(activeTableIndex, 0, over);
+    newOverTables.splice(overTableIndex, 0, active);
+
+    activeGroup.tables = newActiveTables;
+    overGroup.tables = newOverTables;
+
+    updateTableGroup(active.id, overGroup.id);
+    updateTableGroup(over.id, activeGroup.id);
+  }
+
+  return groups;
+};
+
+const handleMoveToEmptySlot = (
+  groups: TableGroupType[],
+  activeId: string,
+  overId: string
+) => {
+  const { group: activeGroup, table: activeTable } = findGroupAndTableById(
+    groups,
+    activeId
+  );
+  const targetGroupId = overId.split('-')[1];
+  const targetGroup = groups.find((g) => g.id === targetGroupId);
+
+  if (!activeGroup || !activeTable || !targetGroup) return groups;
+
+  const newActiveTables = activeGroup.tables.filter((t) => t.id !== activeId);
+  const newTargetTables = [...targetGroup.tables, activeTable];
+
+  activeGroup.tables = newActiveTables;
+  targetGroup.tables = newTargetTables;
+
+  updateTableGroup(activeTable.id, targetGroup.id);
+
+  return groups;
+};
+
 const calculateNewGroupsOnDragEnd = (
   groups: TableGroupType[],
   activeId: string,
   overId: string
-): TableGroupType[] => {
+): TableGroupType[] | null => {
   const newGroups = structuredClone(groups);
-  let draggedTable: TableWithItems | undefined;
+  const overIsTable = !overId.startsWith('empty-');
 
-  // Find and remove the dragged table from its original group
-  for (const group of newGroups) {
-    const tableIndex = group.tables.findIndex((t) => t.id === activeId);
-    if (tableIndex !== -1) {
-      draggedTable = group.tables.splice(tableIndex, 1)[0];
-      break;
-    }
+  if (overIsTable) {
+    return handleTableSwap(newGroups, activeId, overId);
   }
-
-  if (!draggedTable) return groups;
-
-  // Find the target group and add the table
-  const targetGroupId = overId.startsWith('empty-')
-    ? overId.split('-')[1]
-    : (newGroups.find((g) => g.tables.some((t) => `${g.id}-${t.id}` === overId))
-        ?.id ?? overId.split('-')[1]);
-
-  if (!targetGroupId) return groups;
-
-  const targetGroup = newGroups.find((g) => g.id === targetGroupId);
-  if (targetGroup) {
-    targetGroup.tables.push(draggedTable);
-    updateTableGroup(draggedTable.id, targetGroupId);
-  }
-
-  return newGroups;
+  return handleMoveToEmptySlot(newGroups, activeId, overId);
 };
 
 export default function TablesPage() {
@@ -101,7 +183,9 @@ export default function TablesPage() {
       activeId,
       overId
     );
-    setTableGroups(newGroups);
+    if (newGroups) {
+      setTableGroups(newGroups);
+    }
   };
 
   const handleTableAdded = (newTable: Table) => {
@@ -157,6 +241,7 @@ export default function TablesPage() {
         onDragEnd={handleDragEnd}
         sensors={sensors}
         modifiers={[restrictToWindowEdges]}
+        collisionDetection={closestCorners}
       >
         <div className="grid flex-1 auto-rows-min gap-x-24 p-4 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
           {tableGroups.map((group) => (

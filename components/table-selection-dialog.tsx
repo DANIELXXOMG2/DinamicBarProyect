@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Separator } from './ui/separator';
 
 interface TableData {
   id: string;
@@ -34,12 +35,24 @@ interface TableSelectionDialogProps {
   readonly onSelectTable: (table: { id: string; name: string }) => void;
 }
 
+function processTableGroups(groups: TableGroupData[]): TableGroupData[] {
+  return groups.map((group) => ({
+    ...group,
+    tables: group.tables.map((table) => ({
+      ...table,
+      status: (table.tab?.isActive ? 'OCCUPIED' : 'AVAILABLE') as
+        | 'AVAILABLE'
+        | 'OCCUPIED',
+    })),
+  }));
+}
+
 export function TableSelectionDialog({
   isOpen,
   onOpenChange,
   onSelectTable,
 }: TableSelectionDialogProps) {
-  const [tables, setTables] = useState<TableData[]>([]);
+  const [tableGroups, setTableGroups] = useState<TableGroupData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,15 +62,9 @@ export function TableSelectionDialog({
           setLoading(true);
           const response = await fetch('/api/tables');
           if (response.ok) {
-            const tableGroups = (await response.json()) as TableGroupData[];
-            const allTables = tableGroups.flatMap((group) => group.tables);
-            const tablesWithStatus = allTables.map((table) => ({
-              ...table,
-              status: (table.tab?.isActive ? 'OCCUPIED' : 'AVAILABLE') as
-                | 'AVAILABLE'
-                | 'OCCUPIED',
-            }));
-            setTables(tablesWithStatus);
+            const fetchedTableGroups =
+              (await response.json()) as TableGroupData[];
+            setTableGroups(processTableGroups(fetchedTableGroups));
           } else {
             console.error('Error fetching tables');
           }
@@ -84,20 +91,32 @@ export function TableSelectionDialog({
           {loading ? (
             <div className="text-center">Cargando mesas...</div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
-              {tables.map((table) => (
-                <Button
-                  key={table.id}
-                  variant={
-                    table.status === 'OCCUPIED' ? 'destructive' : 'outline'
-                  }
-                  disabled={table.status === 'OCCUPIED'}
-                  onClick={() => onSelectTable(table)}
-                  className="flex h-20 flex-col items-center justify-center gap-2"
-                >
-                  <Table className="size-6" />
-                  <span>{table.name}</span>
-                </Button>
+            <div className="space-y-4">
+              {tableGroups.map((group, index) => (
+                <div key={group.id}>
+                  <h3 className="mb-2 text-lg font-semibold">{group.name}</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {group.tables.map((table) => (
+                      <Button
+                        key={table.id}
+                        variant={
+                          table.status === 'OCCUPIED'
+                            ? 'destructive'
+                            : 'outline'
+                        }
+                        disabled={table.status === 'OCCUPIED'}
+                        onClick={() => onSelectTable(table)}
+                        className="flex h-20 flex-col items-center justify-center gap-2"
+                      >
+                        <Table className="size-6" />
+                        <span>{table.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                  {index < tableGroups.length - 1 && (
+                    <Separator className="my-4" />
+                  )}
+                </div>
               ))}
             </div>
           )}

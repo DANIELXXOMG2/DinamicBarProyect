@@ -175,6 +175,29 @@ async function main() {
     console.timeEnd('Creación de proveedor');
     console.log('✅ Proveedor de prueba creado:', testSupplier.name);
 
+    // Crear grupos de mesas y mesas
+    console.log('🪑 Creando grupos de mesas y mesas...');
+    console.time('Creación de mesas');
+    const tableGroups = ['Frente', 'Centro', 'Atras'];
+    for (const groupName of tableGroups) {
+      const group = await prisma.tableGroup.create({
+        data: {
+          name: groupName,
+        },
+      });
+
+      for (let i = 1; i <= 3; i++) {
+        await prisma.table.create({
+          data: {
+            name: `Mesa ${i}`,
+            tableGroupId: group.id,
+          },
+        });
+      }
+    }
+    console.timeEnd('Creación de mesas');
+    console.log('✅ Grupos de mesas y mesas creados');
+
     console.timeEnd('Tiempo total de seed');
     console.log('🎉 Seed completado exitosamente!');
   } catch (error) {
