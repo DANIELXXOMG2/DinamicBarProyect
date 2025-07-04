@@ -21,5 +21,18 @@ services:
       - db
     restart: unless-stopped
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: restaurant-pos-ngrok
+    environment:
+      NGROK_AUTHTOKEN: 2muY3XTARIEsu7geItCddnchrqk_2Ld6F3VafZh1cs1kgGkz7
+    command: http --domain=surely-harmless-colt.ngrok-free.app 3000
+    ports:
+      - '4040:4040'
+    depends_on:
+      - db
+      - adminer
+    restart: unless-stopped
+
 volumes:
   postgres_data:

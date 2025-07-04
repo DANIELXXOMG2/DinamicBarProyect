@@ -216,16 +216,16 @@ export function AddProductForm({
                     </TooltipProvider>
                     <Input
                       id="product-purchase-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={newItem.purchasePrice}
+                      type="text"
+                      pattern="[0-9]*"
+                      placeholder="0"
+                      value={
+                        newItem.purchasePrice === null
+                          ? ''
+                          : newItem.purchasePrice
+                      }
                       onChange={(event) =>
-                        handleInputChange(
-                          'purchasePrice',
-                          Number(event.target.value)
-                        )
+                        handleInputChange('purchasePrice', event.target.value)
                       }
                       className="pl-10"
                     />
@@ -246,16 +246,14 @@ export function AddProductForm({
                     </TooltipProvider>
                     <Input
                       id="product-sale-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={newItem.salePrice}
+                      type="text"
+                      pattern="[0-9]*"
+                      placeholder="0"
+                      value={
+                        newItem.salePrice === null ? '' : newItem.salePrice
+                      }
                       onChange={(event) =>
-                        handleInputChange(
-                          'salePrice',
-                          Number(event.target.value)
-                        )
+                        handleInputChange('salePrice', event.target.value)
                       }
                       className="pl-10"
                     />

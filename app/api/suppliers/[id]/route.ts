@@ -14,10 +14,11 @@ const supplierUpdateSchema = z.object({
 // GET /api/suppliers/[id] - Obtener un proveedor específico
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supplier = await SuppliersService.getSupplier(params.id);
+    const { id } = await params;
+    const supplier = await SuppliersService.getSupplier(id);
 
     if (!supplier) {
       return NextResponse.json(
@@ -39,16 +40,14 @@ export async function GET(
 // PUT /api/suppliers/[id] - Actualizar un proveedor
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const validatedData = supplierUpdateSchema.parse(body);
 
-    const supplier = await SuppliersService.updateSupplier(
-      params.id,
-      validatedData
-    );
+    const supplier = await SuppliersService.updateSupplier(id, validatedData);
     return NextResponse.json({ supplier });
   } catch (error) {
     console.error('Error in PUT /api/suppliers/[id]:', error);
@@ -70,10 +69,11 @@ export async function PUT(
 // DELETE /api/suppliers/[id] - Eliminar un proveedor
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await SuppliersService.deleteSupplier(params.id);
+    const { id } = await params;
+    await SuppliersService.deleteSupplier(id);
     return NextResponse.json({ message: 'Proveedor eliminado exitosamente' });
   } catch (error) {
     console.error('Error in DELETE /api/suppliers/[id]:', error);

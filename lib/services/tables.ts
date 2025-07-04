@@ -72,7 +72,7 @@ async function recalculateTableTotals(tableId: string): Promise<void> {
     }
 
     const subtotal = table.items.reduce((sum, item) => {
-      return sum + item.product.salePrice * item.quantity;
+      return sum + (item.product.salePrice ?? 0) * item.quantity;
     }, 0);
 
     const total = subtotal;

@@ -8,8 +8,14 @@ const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   categoryId: z.string().min(1, 'La categoría es requerida'),
   stock: z.number().int().min(0, 'El stock debe ser mayor o igual a 0'),
-  purchasePrice: z.number().positive('El precio de compra debe ser positivo'),
-  salePrice: z.number().positive('El precio de venta debe ser positivo'),
+  purchasePrice: z
+    .number()
+    .positive('El precio de compra debe ser positivo')
+    .nullable(),
+  salePrice: z
+    .number()
+    .positive('El precio de venta debe ser positivo')
+    .nullable(),
   type: z.nativeEnum(ProductType),
   image: z.string().optional(),
   minStock: z

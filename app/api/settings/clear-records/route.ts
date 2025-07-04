@@ -8,6 +8,9 @@ export async function POST() {
     // await prisma.$executeRawUnsafe('SET session_replication_role = replica;');
 
     // Eliminar en un orden que respete las dependencias
+    await prisma.tabItem.deleteMany({});
+    await prisma.table.deleteMany({});
+    await prisma.tableGroup.deleteMany({});
     await prisma.saleItem.deleteMany({});
     await prisma.sale.deleteMany({});
     await prisma.purchaseItem.deleteMany({});

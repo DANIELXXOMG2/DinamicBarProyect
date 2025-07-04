@@ -10,10 +10,11 @@ const cancelSaleSchema = z.object({
 // GET /api/sales/[id] - Obtener venta específica
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sale = await SalesService.getSale(params.id);
+    const { id } = await params;
+    const sale = await SalesService.getSale(id);
 
     if (!sale) {
       return NextResponse.json(
@@ -35,13 +36,14 @@ export async function GET(
 // DELETE /api/sales/[id] - Cancelar venta
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const validatedData = cancelSaleSchema.parse(body);
 
-    await SalesService.cancelSale(params.id, validatedData.reason);
+    await SalesService.cancelSale(id, validatedData.reason);
 
     return NextResponse.json({ message: 'Venta cancelada exitosamente' });
   } catch (error) {

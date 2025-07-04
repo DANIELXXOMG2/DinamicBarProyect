@@ -30,6 +30,13 @@ export async function POST(
           quantity,
         },
       });
+
+      // Ensure the table is marked as active
+      await prisma.table.update({
+        where: { id: tableId },
+        data: { isActive: true },
+      });
+
       return NextResponse.json(newItem);
     }
   } catch (error) {

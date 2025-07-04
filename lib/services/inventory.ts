@@ -6,8 +6,8 @@ import { prisma } from '@/lib/prisma';
 
 export interface CreateProductData {
   name: string;
-  salePrice: number;
-  purchasePrice: number;
+  salePrice: number | null;
+  purchasePrice: number | null;
   stock: number;
   minStock?: number;
   type: ProductType;

@@ -11,8 +11,8 @@ export function useProductForm(
     categoryId: categories[0]?.id || '',
     stock: 0,
     minStock: 10,
-    purchasePrice: 0,
-    salePrice: 0,
+    purchasePrice: null,
+    salePrice: null,
     image: '',
     type: 'NON_ALCOHOLIC',
   });
@@ -25,7 +25,13 @@ export function useProductForm(
     field: keyof NewProduct,
     value: string | number
   ) => {
-    setNewItem((prev) => ({ ...prev, [field]: value }));
+    if (field === 'purchasePrice' || field === 'salePrice') {
+      const intValue = value === '' ? null : Number.parseInt(String(value), 10);
+      if (intValue !== null && Number.isNaN(intValue)) return;
+      setNewItem((prev) => ({ ...prev, [field]: intValue }));
+    } else {
+      setNewItem((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,8 +81,8 @@ export function useProductForm(
       categoryId: categories[0]?.id || '',
       stock: 0,
       minStock: 10,
-      purchasePrice: 0,
-      salePrice: 0,
+      purchasePrice: null,
+      salePrice: null,
       image: '',
       type: 'NON_ALCOHOLIC',
     });

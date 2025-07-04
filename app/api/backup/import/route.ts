@@ -41,22 +41,25 @@ async function importSimpleModels(backupData: BackupData) {
 async function importComplexModels(backupData: BackupData) {
   if (backupData.tables) {
     for (const { items, ...tableData } of backupData.tables) {
+      const itemsToCreate = items.map(({ tableId, ...item }) => item);
       await prisma.table.create({
-        data: { ...tableData, items: { create: items } },
+        data: { ...tableData, items: { create: itemsToCreate } },
       });
     }
   }
   if (backupData.purchases) {
     for (const { items, ...purchaseData } of backupData.purchases) {
+      const itemsToCreate = items.map(({ purchaseId, ...item }) => item);
       await prisma.purchase.create({
-        data: { ...purchaseData, items: { create: items } },
+        data: { ...purchaseData, items: { create: itemsToCreate } },
       });
     }
   }
   if (backupData.sales) {
     for (const { items, ...saleData } of backupData.sales) {
+      const itemsToCreate = items.map(({ saleId, ...item }) => item);
       await prisma.sale.create({
-        data: { ...saleData, items: { create: items } },
+        data: { ...saleData, items: { create: itemsToCreate } },
       });
     }
   }
@@ -65,8 +68,14 @@ async function importComplexModels(backupData: BackupData) {
       transactions,
       ...cashRegisterData
     } of backupData.cashRegisters) {
+      const transactionsToCreate = transactions.map(
+        ({ cashRegisterId, ...transaction }) => transaction
+      );
       await prisma.cashRegister.create({
-        data: { ...cashRegisterData, transactions: { create: transactions } },
+        data: {
+          ...cashRegisterData,
+          transactions: { create: transactionsToCreate },
+        },
       });
     }
   }

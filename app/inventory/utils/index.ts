@@ -121,18 +121,18 @@ export const ValidationUtils = {
       });
     }
 
-    // Validar precio
-    if (!data.purchasePrice || data.purchasePrice <= 0) {
+    // Validar precios
+    if (data.purchasePrice !== null && data.purchasePrice < 0) {
       errors.push({
         field: 'purchasePrice',
-        message: 'El precio de compra debe ser mayor a 0',
+        message: 'El precio de compra no puede ser negativo',
       });
     }
 
-    if (!data.salePrice || data.salePrice <= 0) {
+    if (data.salePrice !== null && data.salePrice < 0) {
       errors.push({
         field: 'salePrice',
-        message: 'El precio de venta debe ser mayor a 0',
+        message: 'El precio de venta no puede ser negativo',
       });
     }
 

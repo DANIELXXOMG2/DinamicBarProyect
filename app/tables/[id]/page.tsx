@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Trash2, X } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,6 @@ export default function TableDetailsPage() {
 
   const params = useParams();
   const { id } = params;
-  const router = useRouter();
 
   const fetchTableData = useCallback(async () => {
     if (id) {
@@ -82,7 +81,7 @@ export default function TableDetailsPage() {
             tabItemId: item.id,
             productId: item.product.id,
             name: item.product.name,
-            price: item.product.salePrice,
+            price: item.product.salePrice ?? 0,
             quantity: item.quantity,
           }));
           setProducts(productItems);
@@ -203,12 +202,8 @@ export default function TableDetailsPage() {
       // Actualizar los datos de la mesa para reflejar el cierre
       await fetchTableData();
 
-      // Redirigir después de un momento para que el usuario vea el cambio
-      setTimeout(() => {
-        router.push('/tables');
-      }, 2000);
-
       setIsPaymentDialogOpen(false);
+      setCashReceived('');
     } catch (error_) {
       if (error_ instanceof Error) {
         setError(error_.message);

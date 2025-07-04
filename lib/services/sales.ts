@@ -145,8 +145,8 @@ export const SalesService = {
                 productId: item.productId,
                 productName: item.product.name,
                 quantity: item.quantity,
-                unitPrice: item.product.salePrice,
-                totalPrice: item.product.salePrice * item.quantity,
+                unitPrice: item.product.salePrice ?? 0,
+                totalPrice: (item.product.salePrice ?? 0) * item.quantity,
               },
             })
           )

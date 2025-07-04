@@ -12,11 +12,12 @@ const categoryUpdateSchema = z.object({
 // GET /api/inventory/categories/[id] - Obtener una categoría específica
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const categories = await InventoryService.getCategories();
-    const category = categories.find((cat) => cat.id === params.id);
+    const category = categories.find((cat) => cat.id === id);
 
     if (!category) {
       return NextResponse.json(
@@ -38,16 +39,14 @@ export async function GET(
 // PUT /api/inventory/categories/[id] - Actualizar una categoría
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const validatedData = categoryUpdateSchema.parse(body);
 
-    const category = await InventoryService.updateCategory(
-      params.id,
-      validatedData
-    );
+    const category = await InventoryService.updateCategory(id, validatedData);
     return NextResponse.json({ category });
   } catch (error) {
     console.error('Error in PUT /api/inventory/categories/[id]:', error);
@@ -69,10 +68,11 @@ export async function PUT(
 // DELETE /api/inventory/categories/[id] - Eliminar una categoría
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await InventoryService.deleteCategory(params.id);
+    const { id } = await params;
+    await InventoryService.deleteCategory(id);
     return NextResponse.json({ message: 'Categoría eliminada exitosamente' });
   } catch (error) {
     console.error('Error in DELETE /api/inventory/categories/[id]:', error);

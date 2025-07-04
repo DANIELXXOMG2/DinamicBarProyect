@@ -58,8 +58,8 @@ model Category {
 model Product {
   id            String         @id @default(cuid())
   name          String         @unique
-  purchasePrice Float // Precio de compra
-  salePrice     Float // Precio de venta al público
+  purchasePrice Float? // Precio de compra
+  salePrice     Float? // Precio de venta al público
   stock         Int            @default(0)
   minStock      Int?           @default(20)
   type          ProductType    @default(NON_ALCOHOLIC)

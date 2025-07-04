@@ -30,8 +30,8 @@ export interface NewProduct {
   categoryId: string;
   stock: number;
   minStock: number;
-  purchasePrice: number;
-  salePrice: number;
+  purchasePrice: number | null;
+  salePrice: number | null;
   image?: string;
   type: ProductType;
 }
@@ -111,10 +111,10 @@ export interface ProductFormData {
   categoryId: string;
   stock: number;
   minStock: number;
-  purchasePrice: number;
-  salePrice: number;
-  type: ProductType;
+  purchasePrice: number | null;
+  salePrice: number | null;
   image?: string;
+  type: ProductType;
 }
 
 export interface ImageUpdateData {

@@ -16,10 +16,11 @@ const updatePurchaseSchema = z.object({
 // GET /api/purchases/[id] - Obtener una compra específica
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const purchase = await PurchasesService.getPurchase(params.id);
+    const { id } = await params;
+    const purchase = await PurchasesService.getPurchase(id);
 
     if (!purchase) {
       return NextResponse.json(
@@ -41,14 +42,15 @@ export async function GET(
 // PUT /api/purchases/[id] - Actualizar una compra
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updatePurchaseSchema.parse(body);
 
     const updatedPurchase = await PurchasesService.updatePurchase(
-      params.id,
+      id,
       validatedData
     );
 
@@ -73,10 +75,11 @@ export async function PUT(
 // DELETE /api/purchases/[id] - Eliminar una compra
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await PurchasesService.deletePurchase(params.id);
+    const { id } = await params;
+    await PurchasesService.deletePurchase(id);
 
     return NextResponse.json({ message: 'Compra eliminada exitosamente' });
   } catch (error) {
