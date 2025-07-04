@@ -1,12 +1,11 @@
 import {
-  Plus,
-  Minus,
   Package,
   AlertTriangle,
   Edit,
   Trash2,
   ArrowUpDown,
 } from 'lucide-react';
+import { StockActions } from './stock-actions';
 import Image from 'next/image';
 
 import { Product } from '../types/index';
@@ -298,25 +297,10 @@ export function ProductsTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => onStockChange(item.id, -1)}
-                        disabled={item.stock <= 0}
-                      >
-                        <Minus className="size-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => onStockChange(item.id, 1)}
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    </div>
+                    <StockActions
+                      productId={item.id}
+                      onStockChange={onStockChange}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

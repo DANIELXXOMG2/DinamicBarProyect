@@ -1,32 +1,31 @@
-# Dockerfile para una aplicación Next.js
+# Dockerfile para una aplicación Next.js con Bun
 
 # Etapa de dependencias
-FROM node:18-alpine AS deps
+FROM oven/bun:1 AS deps
 WORKDIR /app
 
 # Instalar dependencias
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # Etapa de construcción
-FROM node:18-alpine AS builder
+FROM oven/bun:1 AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Variables de entorno para la construcción
-# Asegúrate de que el DATABASE_URL esté disponible durante la construcción si es necesario para Prisma
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
 # Generar cliente de Prisma
-RUN npx prisma generate
+RUN bunx prisma generate
 
 # Construir la aplicación
-RUN npm run build
+RUN bun run build
 
 # Etapa de producción
-FROM node:18-alpine AS runner
+FROM oven/bun:1 AS runner
 WORKDIR /app
 
 # Variables de entorno
@@ -42,4 +41,4 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 
 # Iniciar la aplicación
-CMD ["npm", "start"]
+CMD ["bun", "start"]

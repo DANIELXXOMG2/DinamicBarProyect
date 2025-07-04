@@ -43,8 +43,39 @@ export const AuthService = {
 
   // Verificar contraseña
   verifyPassword(password: string, hashedPassword: string): boolean {
-    const hashed = this.hashPassword(password);
-    return hashed === hashedPassword;
+    return this.hashPassword(password) === hashedPassword;
+  },
+
+  // Verificar contraseña de administrador
+  async verifyAdminPassword(
+    password: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const adminUser = await prisma.user.findUnique({
+        where: { username: 'admin' },
+      });
+
+      if (!adminUser) {
+        return {
+          success: false,
+          message: 'Usuario administrador no encontrado',
+        };
+      }
+
+      const passwordValid = this.verifyPassword(password, adminUser.password);
+
+      if (!passwordValid) {
+        return {
+          success: false,
+          message: 'Contraseña de administrador incorrecta',
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error verifying admin password:', error);
+      throw new Error('Error al verificar la contraseña de administrador');
+    }
   },
 
   // Iniciar sesión
@@ -72,10 +103,7 @@ export const AuthService = {
       console.log(`🔐 Contraseña proporcionada: ${password}`);
       console.log(`🔐 Contraseña almacenada (hash): ${user.password}`);
 
-      const hashedInputPassword = this.hashPassword(password);
-      console.log(`🔐 Contraseña ingresada (hash): ${hashedInputPassword}`);
-
-      const passwordValid = hashedInputPassword === user.password;
+      const passwordValid = this.verifyPassword(password, user.password);
       console.log(`🔍 ¿Contraseñas coinciden?: ${passwordValid}`);
 
       if (!passwordValid) {

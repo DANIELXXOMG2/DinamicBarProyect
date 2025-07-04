@@ -125,17 +125,19 @@ export const InventoryService = {
   },
 
   async verifyAdminPassword(password: string): Promise<boolean> {
-    const response = await fetch(API_ENDPOINTS.AUTH, {
+    const response = await fetch('/api/auth/verify-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        username: 'admin',
-        password,
-      }),
+      body: JSON.stringify({ password }),
     });
 
-    return response.ok;
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    return data.success;
   },
 };

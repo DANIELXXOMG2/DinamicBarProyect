@@ -26,7 +26,7 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 2. **Construir la Imagen**
 
    ```bash
-   docker build -t restaurant-pos .
+   docker compose build app
    ```
 
 3. **Iniciar Servicios**
@@ -49,9 +49,9 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 
 ## 📋 Requisitos Previos
 
-- Node.js 18+
+- Bun
 - PostgreSQL 12+
-- npm o yarn
+- Docker (Recomendado)
 
 ## 🛠️ Instalación
 
@@ -67,7 +67,7 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 2. **Instalar dependencias**
 
    ```bash
-   npm install
+   bun install
    ```
 
 3. **Iniciar PostgreSQL con Docker**
@@ -84,19 +84,19 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 
    ```bash
    # Generar el cliente de Prisma
-   npm run db:generate
+   bun run db:generate
 
    # Crear las tablas en la base de datos
-   npm run db:push
+   bun run db:push
 
    # Poblar con datos de ejemplo
-   npm run db:seed
+   bun run db:seed
    ```
 
 5. **Iniciar el servidor de desarrollo**
 
    ```bash
-   npm run dev
+   bun run dev
    ```
 
    La aplicación estará disponible en:
@@ -135,16 +135,16 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 
 ```bash
 # Desarrollo
-npm run dev              # Iniciar servidor de desarrollo
-npm run build            # Construir para producción
-npm run start            # Iniciar servidor de producción
+bun run dev              # Iniciar servidor de desarrollo
+bun run build            # Construir para producción
+bun run start            # Iniciar servidor de producción
 
 # Base de datos
-npm run db:generate      # Generar cliente de Prisma
-npm run db:push          # Sincronizar esquema con BD
-npm run db:seed          # Poblar con datos de ejemplo
-npm run db:studio        # Abrir Prisma Studio
-npm run db:reset         # Resetear base de datos
+bun run db:generate      # Generar cliente de Prisma
+bun run db:push          # Sincronizar esquema con BD
+bun run db:seed          # Poblar con datos de ejemplo
+bun run db:studio        # Abrir Prisma Studio
+bun run db:reset         # Resetear base de datos
 ```
 
 ## 🔄 Actualización y Mantenimiento
