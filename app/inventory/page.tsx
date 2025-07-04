@@ -27,6 +27,7 @@ export default function InventoryPage() {
     updateStock,
     updateProductImage,
     deleteProductImage,
+    deleteProduct,
   } = useInventoryData();
 
   const {
@@ -89,14 +90,17 @@ export default function InventoryPage() {
   const handleAdminVerification = async () => {
     const success = await verifyAdminPassword();
     if (success && pendingAction) {
-      // Ejecutar la acción pendiente
       try {
-        await updateStock(
-          pendingAction.productId,
-          pendingAction.type === 'increase'
-            ? pendingAction.amount
-            : -pendingAction.amount
-        );
+        if (pendingAction.type === 'deleteProduct') {
+          await deleteProduct(pendingAction.productId);
+        } else {
+          await updateStock(
+            pendingAction.productId,
+            pendingAction.type === 'increase'
+              ? pendingAction.amount
+              : -pendingAction.amount
+          );
+        }
       } catch {
         // Error handling is done in the hook
       }
@@ -131,6 +135,20 @@ export default function InventoryPage() {
     } catch {
       // Error handling is done in the hook
     }
+  };
+
+  const handleDeleteProductRequest = (productId: string) => {
+    const action = {
+      type: 'deleteProduct' as const,
+      productId,
+    };
+
+    if (requireAdminAuth(action)) {
+      return;
+    }
+
+    // Si es admin, proceder directamente
+    deleteProduct(productId);
   };
 
   const handleAddProduct = async (newProduct: NewProduct, imageFile?: File) => {
@@ -192,6 +210,7 @@ export default function InventoryPage() {
           onStockChange={handleStockChange}
           onEditImage={handleEditImage}
           onDeleteImage={handleDeleteImageRequest}
+          onDeleteProduct={handleDeleteProductRequest}
           hasFilters={hasActiveFilters}
         />
       </main>

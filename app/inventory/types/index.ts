@@ -52,11 +52,16 @@ export interface SortConfig {
 export type StockAction = 'increase' | 'decrease';
 
 // Tipos para autenticación de administrador
-export interface PendingAction {
-  type: 'increase' | 'decrease';
-  productId: string;
-  amount: number;
-}
+export type PendingAction =
+  | {
+      type: 'increase' | 'decrease';
+      productId: string;
+      amount: number;
+    }
+  | {
+      type: 'deleteProduct';
+      productId: string;
+    };
 
 export interface AdminAuthState {
   showModal: boolean;

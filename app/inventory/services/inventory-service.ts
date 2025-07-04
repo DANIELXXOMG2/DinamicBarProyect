@@ -140,4 +140,15 @@ export const InventoryService = {
     const data = await response.json();
     return data.success;
   },
+
+  async deleteProduct(productId: string): Promise<void> {
+    const response = await fetch(`${API_ENDPOINTS.PRODUCTS}/${productId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al eliminar producto');
+    }
+  },
 };

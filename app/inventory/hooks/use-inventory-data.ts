@@ -69,6 +69,32 @@ export function useInventoryData() {
     }
   };
 
+  const deleteProduct = async (productId: string) => {
+    try {
+      setSaving(true);
+      await InventoryService.deleteProduct(productId);
+      setProducts((previous) => previous.filter((p) => p.id !== productId));
+
+      toast({
+        title: 'Producto eliminado',
+        description: 'El producto ha sido eliminado correctamente.',
+      });
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Error al eliminar el producto.',
+        variant: 'destructive',
+      });
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const updateStock = async (id: string, change: number) => {
     try {
       const action = change > 0 ? 'increase' : 'decrease';
@@ -199,5 +225,6 @@ export function useInventoryData() {
     updateStock,
     updateProductImage,
     deleteProductImage,
+    deleteProduct,
   };
 }

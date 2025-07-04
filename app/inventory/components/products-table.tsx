@@ -4,6 +4,7 @@ import {
   Edit,
   Trash2,
   ArrowUpDown,
+  X,
 } from 'lucide-react';
 import { StockActions } from './stock-actions';
 import Image from 'next/image';
@@ -33,6 +34,7 @@ interface ProductsTableProperties {
   readonly onStockChange: (id: string, change: number) => void;
   readonly onEditImage: (productId: string, currentImage?: string) => void;
   readonly onDeleteImage: (productId: string) => void;
+  readonly onDeleteProduct: (productId: string) => void;
   readonly hasFilters: boolean;
 }
 
@@ -61,6 +63,7 @@ export function ProductsTable({
   onStockChange,
   onEditImage,
   onDeleteImage,
+  onDeleteProduct,
   hasFilters,
 }: ProductsTableProperties) {
   const { toast } = useToast();
@@ -114,6 +117,7 @@ export function ProductsTable({
                 </Button>
               </TableHead>
               <TableHead>Acciones</TableHead>
+              <TableHead>Eliminar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -301,6 +305,16 @@ export function ProductsTable({
                       productId={item.id}
                       onStockChange={onStockChange}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => onDeleteProduct(item.id)}
+                    >
+                      <X className="size-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
