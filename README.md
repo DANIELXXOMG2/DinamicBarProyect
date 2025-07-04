@@ -2,6 +2,8 @@
 
 Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript, Prisma y PostgreSQL.
 
+# Restaurant POS System
+
 ## 🚀 Características
 
 - **Gestión de Inventario**: Control completo de productos y categorías
@@ -10,6 +12,40 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 - **API REST**: Endpoints completos para todas las operaciones
 - **Interfaz Moderna**: UI responsive con Tailwind CSS y shadcn/ui
 - **Atajos de Teclado**: Navegación rápida con Alt+1-5
+
+## 🚀 Guía de Despliegue con Docker
+
+1. **Configurar Variables de Entorno**
+
+   ```bash
+   # Copia el archivo de ejemplo
+   cp .env.example .env
+   # Edita las variables según tu configuración
+   ```
+
+2. **Construir la Imagen**
+
+   ```bash
+   docker build -t restaurant-pos .
+   ```
+
+3. **Iniciar Servicios**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Migrar Base de Datos**
+
+   ```bash
+   # Espera unos segundos a que PostgreSQL esté listo
+   docker-compose exec app npx prisma migrate deploy
+   docker-compose exec app npx prisma generate
+   ```
+
+5. **Acceder a la Aplicación**
+   - App: http://localhost:3000
+   - Adminer (DB): http://localhost:8080
 
 ## 📋 Requisitos Previos
 
@@ -87,42 +123,6 @@ Sistema de punto de venta para restaurantes desarrollado con Next.js, TypeScript
 - **Tab**: Mesas abiertas con totales calculados
 - **TabItem**: Items individuales de cada mesa
 
-### Relaciones
-
-- Una categoría puede tener múltiples productos
-- Una mesa puede tener múltiples items
-- Cada item está relacionado con un producto específico
-
-## 🔌 API Endpoints
-
-### Store (Información del Local)
-
-- `GET /api/store` - Obtener información del local
-- `POST /api/store` - Crear/actualizar información del local
-- `PUT /api/store` - Actualizar información del local
-
-### Inventory (Inventario)
-
-- `GET /api/inventory/categories` - Obtener categorías
-- `POST /api/inventory/categories` - Crear categoría
-- `GET /api/inventory/products` - Obtener productos
-- `POST /api/inventory/products` - Crear producto
-- `GET /api/inventory/products/[id]` - Obtener producto específico
-- `PUT /api/inventory/products/[id]` - Actualizar producto
-- `DELETE /api/inventory/products/[id]` - Eliminar producto
-- `PATCH /api/inventory/products/[id]` - Actualizar stock
-
-### Tabs (Mesas Abiertas)
-
-- `GET /api/tabs` - Obtener mesas activas
-- `POST /api/tabs` - Crear nueva mesa
-- `GET /api/tabs/[id]` - Obtener mesa específica
-- `PUT /api/tabs/[id]` - Actualizar propina
-- `DELETE /api/tabs/[id]` - Cerrar mesa
-- `POST /api/tabs/[id]/items` - Agregar item a mesa
-- `PUT /api/tabs/[id]/items/[productId]` - Actualizar cantidad de item
-- `DELETE /api/tabs/[id]/items/[productId]` - Eliminar item de mesa
-
 ## ⌨️ Atajos de Teclado
 
 - `Alt + 1` - Ir a Bebidas
@@ -147,6 +147,44 @@ npm run db:studio        # Abrir Prisma Studio
 npm run db:reset         # Resetear base de datos
 ```
 
+## 🔄 Actualización y Mantenimiento
+
+Cuando necesites actualizar la aplicación con los últimos cambios del código o ejecutar un comando específico (como migraciones de base de datos), sigue estos pasos:
+
+1.  **Obtener Últimos Cambios**
+
+    ```bash
+    git pull origin master
+    ```
+
+2.  **Reconstruir la Imagen de la Aplicación**
+
+    Este comando actualiza la imagen de Docker con tu nuevo código.
+
+    ```bash
+    docker-compose build app
+    ```
+
+3.  **Reiniciar los Servicios**
+
+    Esto reiniciará el contenedor de la aplicación para que utilice la nueva imagen.
+
+    ```bash
+    docker-compose up -d
+    ```
+
+4.  **Ejecutar Comandos Específicos**
+
+    Si necesitas ejecutar comandos como migraciones o generar el cliente de Prisma, usa `docker-compose exec`.
+
+    ```bash
+    # Ejemplo: Aplicar migraciones de la base de datos
+    docker-compose exec app npx prisma migrate deploy
+
+    # Ejemplo: Generar el cliente de Prisma
+    docker-compose exec app npx prisma generate
+    ```
+
 ## 🐳 Comandos Docker
 
 ```bash
@@ -155,7 +193,6 @@ docker-compose up -d     # Iniciar servicios en segundo plano
 docker-compose down      # Detener y eliminar contenedores
 docker-compose ps        # Ver estado de contenedores
 docker-compose logs      # Ver logs de todos los servicios
-docker-compose logs postgres  # Ver logs solo de PostgreSQL
 
 # Gestión de datos
 docker-compose down -v   # Eliminar contenedores y volúmenes
@@ -199,38 +236,6 @@ docker volume rm restaurant-pos_postgres_data  # Eliminar datos de BD
 - **Validación**: Zod
 - **Iconos**: Lucide React
 - **Formularios**: React Hook Form
-
-## 📝 Notas de Desarrollo
-
-### Servicios Implementados
-
-1. **StoreService**: Manejo de información del local
-2. **InventoryService**: Gestión completa de inventario
-3. **TabsService**: Manejo de mesas y órdenes
-
-### Características de la Base de Datos
-
-- **Relaciones**: Configuradas con cascada para mantener integridad
-- **Validaciones**: Esquemas Zod para validación de datos
-- **Índices**: Optimizados para consultas frecuentes
-- **Timestamps**: Seguimiento automático de creación y actualización
-
-### Mejores Prácticas Implementadas
-
-- **Separación de responsabilidades**: Servicios, controladores y modelos separados
-- **Validación de datos**: Validación tanto en frontend como backend
-- **Manejo de errores**: Respuestas consistentes y logging apropiado
-- **Tipado fuerte**: TypeScript en todo el proyecto
-- **API RESTful**: Endpoints siguiendo convenciones REST
-
-## 🚀 Próximos Pasos
-
-- [ ] Implementar autenticación y autorización
-- [ ] Agregar reportes y analytics
-- [ ] Implementar notificaciones en tiempo real
-- [ ] Agregar soporte para múltiples locales
-- [ ] Implementar backup automático
-- [ ] Agregar tests unitarios e integración
 
 ## 📄 Licencia
 

@@ -1,4 +1,17 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: restaurant-pos-app
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    env_file:
+      - .env
+    restart: unless-stopped
+
   db:
     image: postgres:15
     container_name: restaurant-pos-db
@@ -19,19 +32,6 @@ services:
       - '8080:8080'
     depends_on:
       - db
-    restart: unless-stopped
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: restaurant-pos-ngrok
-    environment:
-      NGROK_AUTHTOKEN: 2muY3XTARIEsu7geItCddnchrqk_2Ld6F3VafZh1cs1kgGkz7
-    command: http --domain=surely-harmless-colt.ngrok-free.app 3000
-    ports:
-      - '4040:4040'
-    depends_on:
-      - db
-      - adminer
     restart: unless-stopped
 
 volumes:
