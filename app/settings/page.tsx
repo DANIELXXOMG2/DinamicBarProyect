@@ -142,7 +142,7 @@ export default function SettingsPage() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/import', {
+      const response = await fetch('/api/inventory-backup/import', {
         method: 'POST',
         body: formData,
       });
@@ -165,7 +165,7 @@ export default function SettingsPage() {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const response = await fetch('/api/export');
+      const response = await fetch('/api/inventory-backup/export');
 
       if (response.ok) {
         const blob = await response.blob();
