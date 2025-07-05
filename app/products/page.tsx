@@ -105,7 +105,7 @@ export default function ProductsPage() {
     <div className="flex flex-1 flex-col overflow-hidden">
       <main className="flex-1 overflow-auto p-4">
         {/* Barra de búsqueda y selector de mesa */}
-        <div className="mb-4 flex flex-col justify-between gap-2 md:flex-row md:items-center">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4 md:flex-nowrap">
           <SearchBar
             value={searchQuery}
             onChange={handleSearchChange}

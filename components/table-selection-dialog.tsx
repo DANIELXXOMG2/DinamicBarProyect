@@ -80,14 +80,14 @@ export function TableSelectionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Seleccionar Mesa</DialogTitle>
           <DialogDescription>
             Elige una mesa para asignar los productos.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
             <div className="text-center">Cargando mesas...</div>
           ) : (
@@ -95,7 +95,7 @@ export function TableSelectionDialog({
               {tableGroups.map((group, index) => (
                 <div key={group.id}>
                   <h3 className="mb-2 text-lg font-semibold">{group.name}</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="flex flex-wrap justify-center gap-4 pb-4">
                     {group.tables.map((table) => (
                       <Button
                         key={table.id}

@@ -95,6 +95,9 @@ export async function getTableGroupsWithTables(): Promise<TableGroup[]> {
     const groups = await prisma.tableGroup.findMany({
       include: {
         tables: {
+          orderBy: {
+            name: 'asc',
+          },
           include: {
             items: {
               include: {

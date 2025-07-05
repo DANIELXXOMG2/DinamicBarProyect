@@ -149,21 +149,36 @@ export default function TableDetailsPage() {
     }
   };
 
-  const handleSplitSubmit = (selectedItems: readonly ProductOnTable[]) => {
-    // Aquí puedes manejar la lógica de pago para los items seleccionados
-    console.log('Pagar los siguientes items:', selectedItems);
-    // Por ahora, solo cerramos el diálogo y actualizamos el estado
-    // En una implementación real, llamarías a una API para procesar el pago parcial
-    const paidAmount = selectedItems.reduce(
-      (acc, item) => acc + item.quantity * item.price,
-      0
-    );
-    // Simular que se ha pagado
-    alert(`Se han pagado $${paidAmount.toLocaleString()}`);
-    // Aquí podrías querer actualizar la venta para reflejar el pago parcial
-    // y eliminar los items pagados de la lista.
-    // Por simplicidad, recargaremos los datos.
-    fetchTableData();
+  const handleSplitSubmit = async (
+    selectedItems: readonly (ProductOnTable & { splitQuantity: number })[]
+  ) => {
+    try {
+      const response = await fetch(`/api/tables/${id}/split`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemsToPay: selectedItems.map((item) => ({
+            tabItemId: item.tabItemId,
+            quantity: item.splitQuantity,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al procesar el pago parcial');
+      }
+
+      toast.success('Pago parcial procesado correctamente');
+      fetchTableData(); // Recargar datos para reflejar los cambios
+    } catch (error_) {
+      if (error_ instanceof Error) {
+        setError(error_.message);
+        toast.error(error_.message);
+      }
+    }
   };
 
   const handleProcessSale = async () => {

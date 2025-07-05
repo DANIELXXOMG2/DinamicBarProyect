@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import { ProductCard } from '@/components/product-card';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -94,11 +94,9 @@ export function ProductsList({
 
   const handleAddToTable = async (productId: string, quantity = 1) => {
     if (!selectedTable) {
-      toast({
-        title: 'Mesa no seleccionada',
+      toast.error('Mesa no seleccionada', {
         description:
           'Por favor selecciona una mesa antes de agregar productos.',
-        variant: 'destructive',
       });
       return;
     }
@@ -121,9 +119,8 @@ export function ProductsList({
       });
 
       if (response.ok) {
-        toast({
-          title: 'Producto agregado',
-          description: `${product.name} agregado a la mesa.`,
+        toast.success('Producto agregado', {
+          description: `${quantity} x ${product.name} agregado a la mesa.`,
         });
       } else {
         const errorData = await response.json();
@@ -131,13 +128,11 @@ export function ProductsList({
       }
     } catch (error) {
       console.error('Error adding product to table:', error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description:
           error instanceof Error
             ? error.message
             : 'Error al agregar producto a la mesa.',
-        variant: 'destructive',
       });
     }
   };

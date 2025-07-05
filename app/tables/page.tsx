@@ -229,6 +229,8 @@ export default function TablesPage() {
     setTableGroups((prevGroups) => prevGroups.filter((g) => g.id !== groupId));
   };
 
+  const allTables = tableGroups.flatMap((group) => group.tables);
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b p-4">
@@ -265,6 +267,7 @@ export default function TablesPage() {
         onClose={() => setIsAddTableDialogOpen(false)}
         onTableAdded={handleTableAdded}
         tableGroups={tableGroups}
+        allTables={allTables}
       />
       <AddTableGroupDialog
         isOpen={isAddGroupDialogOpen}

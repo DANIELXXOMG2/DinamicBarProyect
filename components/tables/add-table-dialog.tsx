@@ -28,6 +28,7 @@ interface AddTableDialogProps {
   readonly onClose: () => void;
   readonly onTableAdded: (table: Table) => void;
   readonly tableGroups: TableGroup[];
+  readonly allTables: Table[];
 }
 
 export function AddTableDialog({
@@ -35,14 +36,31 @@ export function AddTableDialog({
   onClose,
   onTableAdded,
   tableGroups,
+  allTables,
 }: AddTableDialogProps) {
   const [tableName, setTableName] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>();
   const [isSaving, setIsSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setTableName(newName);
+    if (allTables.some((table) => table.name === newName.trim())) {
+      setNameError('Ya existe una mesa con este nombre.');
+    } else {
+      setNameError(null);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!tableName.trim() || !selectedGroup) {
       toast.error('Por favor, complete todos los campos');
+      return;
+    }
+
+    if (nameError) {
+      toast.error(nameError);
       return;
     }
 
@@ -91,13 +109,18 @@ export function AddTableDialog({
             <Label htmlFor="name" className="text-right">
               Nombre
             </Label>
-            <Input
-              id="name"
-              value={tableName}
-              onChange={(e) => setTableName(e.target.value)}
-              className="col-span-3"
-              placeholder="Ej: Mesa 10"
-            />
+            <div className="col-span-3">
+              <Input
+                id="name"
+                value={tableName}
+                onChange={handleNameChange}
+                className={`${nameError ? 'border-red-500' : ''}`}
+                placeholder="Ej: Mesa 10"
+              />
+              {nameError && (
+                <p className="text-red-500 text-sm mt-1">{nameError}</p>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="group" className="text-right">

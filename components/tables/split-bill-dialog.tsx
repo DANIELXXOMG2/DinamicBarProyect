@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,9 +9,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MinusCircle, PlusCircle } from 'lucide-react';
 
 interface ProductOnTable {
   tabItemId: string;
@@ -23,34 +23,45 @@ interface ProductOnTable {
 
 interface SplitBillDialogProps {
   readonly details: readonly ProductOnTable[];
-  readonly onSplitSubmit: (selectedItems: readonly ProductOnTable[]) => void;
+  readonly onSplitSubmit: (
+    selectedItems: readonly (ProductOnTable & { splitQuantity: number })[]
+  ) => void;
 }
 
 export function SplitBillDialog({
   details,
   onSplitSubmit,
 }: SplitBillDialogProps) {
-  const [selectedItems, setSelectedItems] = useState<ProductOnTable[]>([]);
+  const [splitQuantities, setSplitQuantities] = useState<
+    Record<string, number>
+  >({});
   const [amountReceived, setAmountReceived] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [open, setOpen] = useState(false);
 
-  const handleSelect = (item: ProductOnTable) => {
-    setSelectedItems((prev) =>
-      prev.some((i) => i.tabItemId === item.tabItemId)
-        ? prev.filter((i) => i.tabItemId !== item.tabItemId)
-        : [...prev, item]
-    );
+  const handleQuantityChange = (itemId: string, newQuantity: number) => {
+    setSplitQuantities((prev) => ({ ...prev, [itemId]: newQuantity }));
   };
 
-  const total = selectedItems.reduce(
-    (acc, item) => acc + item.quantity * item.price,
-    0
-  );
+  const selectedItems = useMemo(() => {
+    return details
+      .map((item) => ({
+        ...item,
+        splitQuantity: splitQuantities[item.tabItemId] || 0,
+      }))
+      .filter((item) => item.splitQuantity > 0);
+  }, [details, splitQuantities]);
+
+  const total = useMemo(() => {
+    return selectedItems.reduce(
+      (acc, item) => acc + item.splitQuantity * item.price,
+      0
+    );
+  }, [selectedItems]);
 
   const handleSubmit = () => {
     onSplitSubmit(selectedItems);
-    setSelectedItems([]);
+    setSplitQuantities({});
     setOpen(false);
   };
 
@@ -65,25 +76,53 @@ export function SplitBillDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="max-h-60 overflow-y-auto">
-            {details.map((item) => (
-              <div
-                key={item.tabItemId}
-                className="flex items-center justify-between"
-              >
-                <div>
-                  <p>{item.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    ${item.price.toLocaleString()}
-                  </p>
+            {details.map((item) => {
+              const splitQuantity = splitQuantities[item.tabItemId] || 0;
+              return (
+                <div
+                  key={item.tabItemId}
+                  className="flex items-center justify-between"
+                >
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total: ${(item.price * splitQuantity).toLocaleString()}
+                      <br />
+                      Unidades restantes: {item.quantity - splitQuantity}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        handleQuantityChange(
+                          item.tabItemId,
+                          Math.max(0, splitQuantity - 1)
+                        )
+                      }
+                      disabled={splitQuantity <= 0}
+                    >
+                      <MinusCircle className="size-5" />
+                    </Button>
+                    <span>{splitQuantity}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        handleQuantityChange(
+                          item.tabItemId,
+                          Math.min(item.quantity, splitQuantity + 1)
+                        )
+                      }
+                      disabled={splitQuantity >= item.quantity}
+                    >
+                      <PlusCircle className="size-5" />
+                    </Button>
+                  </div>
                 </div>
-                <Checkbox
-                  checked={selectedItems.some(
-                    (i) => i.tabItemId === item.tabItemId
-                  )}
-                  onCheckedChange={() => handleSelect(item)}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="border-t pt-4">
             <div className="flex justify-between font-bold">

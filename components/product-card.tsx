@@ -170,7 +170,7 @@ export function ProductCard({
           size="sm"
         >
           <ShoppingCart className="size-4 sm:mr-1" />
-          <span className="hidden sm:inline">Agregar</span>
+          <span className="hidden 2xl:inline">Agregar</span>
         </Button>
       </div>
     </div>
