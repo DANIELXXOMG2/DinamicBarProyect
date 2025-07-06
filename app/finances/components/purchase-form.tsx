@@ -61,6 +61,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
     supplierId: '',
+    paymentMethod: 'CASH' as 'CASH' | 'CARD' | 'TRANSFER',
   });
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -359,6 +360,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
         date: new Date().toISOString().split('T')[0],
         time: new Date().toTimeString().slice(0, 5),
         supplierId: '',
+        paymentMethod: 'CASH',
       });
       setItems([]);
       setCurrentItem({
@@ -482,6 +484,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
       subtotal,
       totalIva,
       grandTotal,
+      paymentMethod: purchase.paymentMethod,
     };
   };
 
@@ -518,8 +521,27 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
         throw new Error('Error al registrar la compra');
       }
 
-      clearFormData();
       toast({ title: 'Éxito', description: 'Compra registrada correctamente' });
+
+      // Limpiar el formulario
+      clearFormData();
+      setPurchase({
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        supplierId: '',
+        paymentMethod: 'CASH',
+      });
+      setItems([]);
+      setCurrentItem({
+        productId: '',
+        quantity: 1,
+        purchasePrice: 0,
+        salePrice: 0,
+        iva: 0,
+      });
+      setProductSearch('');
+      setSelectedSupplier(null);
+
       onClose();
     } catch (error: unknown) {
       console.error(
@@ -576,6 +598,24 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
                 setPurchase({ ...purchase, time: event.target.value })
               }
             />
+          </div>
+          <div>
+            <Label htmlFor="paymentMethod">Método de pago</Label>
+            <Select
+              value={purchase.paymentMethod}
+              onValueChange={(value: 'CASH' | 'CARD' | 'TRANSFER') => {
+                setPurchase({ ...purchase, paymentMethod: value });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccione un método" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CASH">Efectivo</SelectItem>
+                <SelectItem value="CARD">Tarjeta</SelectItem>
+                <SelectItem value="TRANSFER">Transferencia</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="col-span-3 space-y-2">
             {selectedSupplier && selectedSupplier.image && (
