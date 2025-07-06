@@ -5,8 +5,7 @@ import type { FormId } from './context/form-manager.context';
 
 import { PanelLeftClose, PanelRightClose } from 'lucide-react';
 
-import { ExpenseVoucherForm } from './components/expense-voucher-form';
-import { IncomeVoucherForm } from './components/income-voucher-form';
+import { VoucherForm } from './components/voucher-form';
 import { PurchaseForm } from './components/purchase-form';
 import { PurchasesList } from './components/purchases-list';
 import { VouchersList } from './components/vouchers-list';
@@ -95,7 +94,10 @@ function FinancesContent() {
         {!minimizedForms.includes('income') && (
           <div className="flex flex-col gap-4 rounded-lg border p-4">
             <h2 className="mb-4 text-2xl font-semibold">Ingresos</h2>
-            <IncomeVoucherForm onVoucherCreated={handleVoucherCreated} />
+            <VoucherForm
+              formType="income"
+              onVoucherCreated={handleVoucherCreated}
+            />
             <VouchersList key={refreshKey} type="income" />
           </div>
         )}
@@ -103,7 +105,10 @@ function FinancesContent() {
         {!minimizedForms.includes('expense') && (
           <div className="flex flex-col gap-4 rounded-lg border p-4">
             <h2 className="mb-4 text-2xl font-semibold">Egresos</h2>
-            <ExpenseVoucherForm onVoucherCreated={handleVoucherCreated} />
+            <VoucherForm
+              formType="expense"
+              onVoucherCreated={handleVoucherCreated}
+            />
             <VouchersList key={refreshKey} type="expense" />
           </div>
         )}

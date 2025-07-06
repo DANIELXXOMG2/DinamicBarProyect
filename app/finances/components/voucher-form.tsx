@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { Save, PanelLeftClose } from 'lucide-react';
 
+import { validateVoucherForm } from '../utils/validation-helpers';
 import { useFormManager } from '../hooks/use-form-manager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +14,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useFormPersistence } from '@/hooks/use-form-persistence';
 
-interface ExpenseVoucherFormProperties {
-  readonly onVoucherCreated: () => void;
-}
-
 interface VoucherData {
   description: string;
   amount: number;
@@ -24,25 +21,54 @@ interface VoucherData {
   time: string;
 }
 
-export function ExpenseVoucherForm({
+// Constantes para textos y configuración
+const FORM_TEXTS = {
+  income: {
+    title: 'Nuevo Comprobante de Ingreso',
+    placeholder: 'Describe el motivo del ingreso...',
+    successMessage: 'Comprobante de ingreso creado correctamente',
+  },
+  expense: {
+    title: 'Nuevo Comprobante de Egreso',
+    placeholder: 'Describe el motivo del egreso...',
+    successMessage: 'Comprobante de egreso creado correctamente',
+  },
+} as const;
+
+const VALIDATION_MESSAGES = {
+  REQUIRED_FIELDS: 'Por favor complete todos los campos obligatorios',
+  CREATE_ERROR: 'Error al crear el comprobante',
+  DATA_RECOVERED: 'Se han cargado los datos guardados del formulario',
+} as const;
+
+// Función helper para obtener fecha y hora actual
+const getCurrentDateTime = () => ({
+  date: new Date().toISOString().split('T')[0],
+  time: new Date().toTimeString().slice(0, 5),
+});
+
+interface VoucherFormProperties {
+  readonly formType: 'income' | 'expense';
+  readonly onVoucherCreated: () => void;
+}
+
+export function VoucherForm({
+  formType,
   onVoucherCreated,
-}: ExpenseVoucherFormProperties) {
+}: VoucherFormProperties) {
   const { toggleMinimize } = useFormManager();
   const { toast } = useToast();
-  const [voucher, setVoucher] = useState({
+  const [voucher, setVoucher] = useState<VoucherData>({
     description: '',
     amount: 0,
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5),
+    ...getCurrentDateTime(),
   });
   const [saving, setSaving] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
-  // Hook de persistencia de formularios
   const { saveFormData, loadFormData, clearFormData, isLoaded } =
-    useFormPersistence('expense');
+    useFormPersistence(formType);
 
-  // Cargar datos persistidos al montar el componente
   useEffect(() => {
     const savedData = loadFormData();
     if (savedData && savedData.voucher) {
@@ -57,13 +83,12 @@ export function ExpenseVoucherForm({
         setVoucher({ description, amount, date, time });
         toast({
           title: 'Datos recuperados',
-          description: 'Se han cargado los datos guardados del formulario',
+          description: VALIDATION_MESSAGES.DATA_RECOVERED,
         });
       }
     }
   }, [loadFormData, toast]);
 
-  // Guardar datos automáticamente cuando cambien (solo después de cargar)
   useEffect(() => {
     if (isLoaded && (voucher.description || voucher.amount > 0)) {
       const formData = { voucher };
@@ -71,29 +96,31 @@ export function ExpenseVoucherForm({
     }
   }, [voucher, saveFormData, isLoaded]);
 
-  const handleCancel = () => {
+  const resetForm = useCallback(() => {
+    setVoucher({
+      description: '',
+      amount: 0,
+      ...getCurrentDateTime(),
+    });
+  }, []);
+
+  const handleCancel = useCallback(() => {
     if (cancelConfirm) {
-      // Segundo clic - confirmar cancelación
       clearFormData();
-      setVoucher({
-        description: '',
-        amount: 0,
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
-      });
+      resetForm();
       onVoucherCreated();
     } else {
-      // Primer clic - activar confirmación
       setCancelConfirm(true);
       setTimeout(() => setCancelConfirm(false), 3000);
     }
-  };
+  }, [cancelConfirm, clearFormData, resetForm, onVoucherCreated]);
 
   const handleSubmit = async () => {
-    if (!voucher.description.trim() || voucher.amount <= 0) {
+    const validation = validateVoucherForm(voucher);
+    if (!validation.isValid) {
       toast({
         title: 'Error',
-        description: 'Por favor complete todos los campos obligatorios',
+        description: validation.errors.join(', '),
         variant: 'destructive',
       });
       return;
@@ -102,14 +129,13 @@ export function ExpenseVoucherForm({
     setSaving(true);
 
     try {
-      // Guardar usando la API
       const response = await fetch('/api/vouchers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'EXPENSE',
+          type: formType.toUpperCase(),
           amount: voucher.amount,
           description: voucher.description,
           date: `${voucher.date}T${voucher.time}:00.000Z`,
@@ -120,19 +146,18 @@ export function ExpenseVoucherForm({
         throw new Error('Error al crear el comprobante');
       }
 
-      // Limpiar datos persistidos después del éxito
       clearFormData();
 
       toast({
         title: 'Éxito',
-        description: 'Comprobante de egreso creado correctamente',
+        description: FORM_TEXTS[formType].successMessage,
       });
 
       onVoucherCreated();
     } catch {
       toast({
         title: 'Error',
-        description: 'Error al crear el comprobante',
+        description: VALIDATION_MESSAGES.CREATE_ERROR,
         variant: 'destructive',
       });
     } finally {
@@ -140,26 +165,27 @@ export function ExpenseVoucherForm({
     }
   };
 
+  const { title, placeholder: descriptionPlaceholder } = FORM_TEXTS[formType];
+
   return (
     <Card className="mb-4">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Nuevo Comprobante de Egreso</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => toggleMinimize('expense')}
+          onClick={() => toggleMinimize(formType)}
         >
           <PanelLeftClose className="size-5" />
         </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Fecha y Hora */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Fecha *</Label>
+              <Label htmlFor={`${formType}-date`}>Fecha *</Label>
               <Input
-                id="date"
+                id={`${formType}-date`}
                 type="date"
                 value={voucher.date}
                 onChange={(event) =>
@@ -168,9 +194,9 @@ export function ExpenseVoucherForm({
               />
             </div>
             <div>
-              <Label htmlFor="time">Hora *</Label>
+              <Label htmlFor={`${formType}-time`}>Hora *</Label>
               <Input
-                id="time"
+                id={`${formType}-time`}
                 type="time"
                 value={voucher.time}
                 onChange={(event) =>
@@ -180,12 +206,13 @@ export function ExpenseVoucherForm({
             </div>
           </div>
 
-          {/* Descripción */}
           <div>
-            <Label htmlFor="description">Descripción/Razón *</Label>
+            <Label htmlFor={`${formType}-description`}>
+              Descripción/Razón *
+            </Label>
             <Textarea
-              id="description"
-              placeholder="Describe el motivo del egreso..."
+              id={`${formType}-description`}
+              placeholder={descriptionPlaceholder}
               value={voucher.description}
               onChange={(event) =>
                 setVoucher({ ...voucher, description: event.target.value })
@@ -194,43 +221,30 @@ export function ExpenseVoucherForm({
             />
           </div>
 
-          {/* Valor */}
           <div>
-            <Label htmlFor="amount">Valor *</Label>
+            <Label htmlFor={`${formType}-amount`}>Valor *</Label>
             <Input
-              id="amount"
+              id={`${formType}-amount`}
               type="number"
-              step="0.01"
-              min="0"
               placeholder="0.00"
-              value={voucher.amount || ''}
+              value={voucher.amount}
               onChange={(event) =>
-                setVoucher({
-                  ...voucher,
-                  amount: Number.parseFloat(event.target.value) || 0,
-                })
+                setVoucher({ ...voucher, amount: Number(event.target.value) })
               }
             />
           </div>
 
-          {/* Botones */}
-          <div className="flex space-x-2 pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                saving || !voucher.description.trim() || voucher.amount <= 0
-              }
-              className="flex-1"
-            >
-              <Save className="mr-2 size-4" />
-              {saving ? 'Guardando...' : 'Guardar Comprobante'}
-            </Button>
+          <div className="flex justify-end space-x-2">
             <Button
               variant={cancelConfirm ? 'destructive' : 'outline'}
               onClick={handleCancel}
-              className={cancelConfirm ? 'animate-pulse' : ''}
+              disabled={saving}
             >
-              {cancelConfirm ? '¿Confirmar?' : 'Cancelar'}
+              {cancelConfirm ? 'Confirmar' : 'Cancelar'}
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              <Save className="mr-2 size-4" />
+              {saving ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
         </div>

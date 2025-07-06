@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, amount, description, category, date } = body;
+    const { type, amount, description, date } = body;
 
     if (!type || !amount || !description) {
       return NextResponse.json(
@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
         type: type.toUpperCase(),
         amount: Number.parseFloat(amount),
         description,
-        category,
         date: date ? new Date(date) : new Date(),
       },
     });

@@ -6,28 +6,34 @@ import { Trash2, Calendar, Clock, Package, Building, Eye } from 'lucide-react';
 import Image from 'next/image';
 
 import { Purchase } from '../types/purchase';
+import {
+  formatDate,
+  getCurrentDateISO,
+  filterByDate,
+  sortByCreatedAt,
+} from '../utils/date-helpers';
+import { formatCurrency } from '../utils/currency-helpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
+// Constantes para configuración de compras
+const PURCHASE_MESSAGES = {
+  DELETE_CONFIRM: '¿Está seguro de que desea eliminar esta compra?',
+  DELETE_SUCCESS: 'Compra eliminada correctamente',
+  DELETE_ERROR: 'No se pudo eliminar la compra',
+  NO_PURCHASES: 'No hay compras registradas',
+  ADD_NEW: "Haga clic en 'Nueva Compra' para agregar una",
+} as const;
+
+const STORAGE_KEY = 'purchases';
 
 export function PurchasesList() {
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getCurrentDateISO());
   const [expandedPurchase, setExpandedPurchase] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,13 +43,7 @@ export function PurchasesList() {
         if (response.ok) {
           const data = await response.json();
           const purchasesData = data.purchases || [];
-          setAllPurchases(
-            purchasesData.sort(
-              (a: Purchase, b: Purchase) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            )
-          );
+          setAllPurchases(sortByCreatedAt(purchasesData));
         } else {
           throw new Error('API error');
         }
@@ -53,13 +53,8 @@ export function PurchasesList() {
           error
         );
         // Fallback a localStorage
-        const stored = JSON.parse(localStorage.getItem('purchases') || '[]');
-        setAllPurchases(
-          stored.sort(
-            (a: Purchase, b: Purchase) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-        );
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        setAllPurchases(sortByCreatedAt(stored));
       }
     };
 
@@ -67,18 +62,12 @@ export function PurchasesList() {
   }, []);
 
   useEffect(() => {
-    if (selectedDate) {
-      const filtered = allPurchases.filter(
-        (p) => p.date.split('T')[0] === selectedDate
-      );
-      setFilteredPurchases(filtered);
-    } else {
-      setFilteredPurchases(allPurchases);
-    }
+    const filtered = filterByDate(allPurchases, selectedDate);
+    setFilteredPurchases(selectedDate ? filtered : allPurchases);
   }, [selectedDate, allPurchases]);
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Está seguro de que desea eliminar esta compra?')) {
+    if (confirm(PURCHASE_MESSAGES.DELETE_CONFIRM)) {
       try {
         const response = await fetch(`/api/purchases/${id}`, {
           method: 'DELETE',
@@ -90,7 +79,7 @@ export function PurchasesList() {
 
           toast({
             title: 'Éxito',
-            description: 'Compra eliminada correctamente',
+            description: PURCHASE_MESSAGES.DELETE_SUCCESS,
           });
         } else {
           throw new Error('Error deleting from API');
@@ -103,11 +92,11 @@ export function PurchasesList() {
         // Fallback a localStorage
         const updatedPurchases = allPurchases.filter((p) => p.id !== id);
         setAllPurchases(updatedPurchases);
-        localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedPurchases));
 
         toast({
           title: 'Éxito',
-          description: 'Compra eliminada correctamente',
+          description: PURCHASE_MESSAGES.DELETE_SUCCESS,
         });
       }
     }
@@ -144,7 +133,7 @@ export function PurchasesList() {
           <div className="text-center">
             <p className="text-sm text-gray-600">Total Compras (Filtrado)</p>
             <p className="text-2xl font-bold text-blue-600">
-              ${getTotalAmount().toFixed(2)}
+              {formatCurrency(getTotalAmount())}
             </p>
             <p className="text-xs text-gray-500">
               {filteredPurchases.length} compra
@@ -220,11 +209,11 @@ export function PurchasesList() {
                   <div className="flex items-center space-x-2">
                     <div className="text-right">
                       <p className="font-bold text-blue-600">
-                        ${purchase.grandTotal.toFixed(2)}
+                        {formatCurrency(purchase.grandTotal)}
                       </p>
                       {purchase.totalIva > 0 && (
                         <p className="text-xs text-gray-500">
-                          IVA: ${purchase.totalIva.toFixed(2)}
+                          IVA: {formatCurrency(purchase.totalIva)}
                         </p>
                       )}
                     </div>
@@ -278,8 +267,8 @@ export function PurchasesList() {
                                 {item.product.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {item.quantity} x $
-                                {item.purchasePrice.toFixed(2)}
+                                {item.quantity} x{' '}
+                                {formatCurrency(item.purchasePrice)}
                                 {item.iva &&
                                   item.iva > 0 &&
                                   ` + ${item.iva}% IVA`}
@@ -287,7 +276,7 @@ export function PurchasesList() {
                             </div>
                           </div>
                           <span className="text-sm font-medium">
-                            ${item.total.toFixed(2)}
+                            {formatCurrency(item.total)}
                           </span>
                         </div>
                       ))}
@@ -297,17 +286,17 @@ export function PurchasesList() {
                     <div className="space-y-1 border-t pt-2 text-sm">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>${purchase.subtotal.toFixed(2)}</span>
+                        <span>{formatCurrency(purchase.subtotal)}</span>
                       </div>
                       {purchase.totalIva > 0 && (
                         <div className="flex justify-between">
                           <span>IVA Total:</span>
-                          <span>${purchase.totalIva.toFixed(2)}</span>
+                          <span>{formatCurrency(purchase.totalIva)}</span>
                         </div>
                       )}
                       <div className="flex justify-between font-bold">
                         <span>Total:</span>
-                        <span>${purchase.grandTotal.toFixed(2)}</span>
+                        <span>{formatCurrency(purchase.grandTotal)}</span>
                       </div>
                     </div>
                   </div>

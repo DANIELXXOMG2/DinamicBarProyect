@@ -15,6 +15,21 @@ import Image from 'next/image';
 
 import { useFormManager } from '../hooks/use-form-manager';
 import { PurchaseItem, Product, Supplier, Category } from '../types/purchase';
+import {
+  PURCHASE_CONSTANTS,
+  PURCHASE_MESSAGES,
+  getCurrentDateTime,
+  isCurrentItemValid,
+  createTemporaryProduct,
+  calculateItemTotal,
+  calculatePurchaseTotals,
+  getInitialPurchaseState,
+  getInitialItemState,
+  getInitialNewProductState,
+  getInitialNewSupplierState,
+  handleApiError,
+} from '../utils/purchase-helpers';
+import { validatePurchaseForm } from '../utils/validation-helpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -41,55 +56,19 @@ interface PurchaseFormProperties {
   readonly onClose: () => void;
 }
 
-const isCurrentItemValid = (item: {
-  productId: string;
-  quantity: number;
-  purchasePrice: number;
-  salePrice: number;
-}): boolean => {
-  return !!(
-    item.productId &&
-    item.quantity > 0 &&
-    item.purchasePrice > 0 &&
-    item.salePrice > 0
-  );
-};
-
 export function PurchaseForm({ onClose }: PurchaseFormProperties) {
   const { toggleMinimize } = useFormManager();
-  const [purchase, setPurchase] = useState({
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().slice(0, 5),
-    supplierId: '',
-    paymentMethod: 'CASH' as 'CASH' | 'CARD' | 'TRANSFER',
-  });
+  const [purchase, setPurchase] = useState(getInitialPurchaseState());
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<PurchaseItem[]>([]);
-  const [currentItem, setCurrentItem] = useState({
-    productId: '',
-    quantity: 1,
-    purchasePrice: 0,
-    salePrice: 0,
-    iva: 0,
-  });
+  const [currentItem, setCurrentItem] = useState(getInitialItemState());
   const [saving, setSaving] = useState(false);
   const [showNewProductForm, setShowNewProductForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    image: '',
-    categoryId: '',
-    type: 'NON_ALCOHOLIC' as 'ALCOHOLIC' | 'NON_ALCOHOLIC',
-  });
+  const [newProduct, setNewProduct] = useState(getInitialNewProductState());
   const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
-  const [newSupplier, setNewSupplier] = useState({
-    name: '',
-    phone: '',
-    image: '',
-    nit: '',
-    address: '',
-  });
+  const [newSupplier, setNewSupplier] = useState(getInitialNewSupplierState());
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
@@ -128,7 +107,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
 
     toast({
       title: 'Datos recuperados',
-      description: 'Se han cargado los datos guardados del formulario',
+      description: PURCHASE_MESSAGES.SUCCESS.DATA_RECOVERED,
     });
   }, [isLoaded, savedData]);
 
@@ -185,10 +164,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
           setProducts(productsData.products || []);
         }
       } catch (error: unknown) {
-        console.error(
-          'Error loading products:',
-          error instanceof Error ? error.message : error
-        );
+        handleApiError(error, PURCHASE_MESSAGES.ERROR.LOAD_PRODUCTS);
         const storedProducts = JSON.parse(
           localStorage.getItem('products') || '[]'
         );
@@ -198,7 +174,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
 
     const debounceLoadProducts = setTimeout(() => {
       loadProducts();
-    }, 300); // 300ms debounce
+    }, PURCHASE_CONSTANTS.DEBOUNCE_DELAY);
 
     return () => clearTimeout(debounceLoadProducts);
   }, [productSearch]);
@@ -213,10 +189,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
           setSuppliers(suppliersData.suppliers || []);
         }
       } catch (error: unknown) {
-        console.error(
-          'Error loading suppliers:',
-          error instanceof Error ? error.message : error
-        );
+        handleApiError(error, PURCHASE_MESSAGES.ERROR.LOAD_SUPPLIERS);
         // Fallback a localStorage en caso de error
         const storedSuppliers = JSON.parse(
           localStorage.getItem('suppliers') || '[]'
@@ -235,10 +208,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
           setCategories(data.categories || []);
         }
       } catch (error: unknown) {
-        console.error(
-          'Error loading categories:',
-          error instanceof Error ? error.message : error
-        );
+        handleApiError(error, PURCHASE_MESSAGES.ERROR.LOAD_CATEGORIES);
       }
     };
     loadCategories();
@@ -248,46 +218,24 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     if (!newProduct.name.trim() || !newProduct.categoryId) {
       toast({
         title: 'Error',
-        description: 'Nombre y categoría son requeridos para el nuevo producto',
+        description: PURCHASE_MESSAGES.VALIDATION.PRODUCT_REQUIRED,
         variant: 'destructive',
       });
       return;
     }
 
-    const category = categories.find((c) => c.id === newProduct.categoryId);
-
-    const temporaryProduct: Product = {
-      id: `new_${Date.now()}`,
-      name: newProduct.name,
-      image: newProduct.image || undefined,
-      purchasePrice: 0, // Se definirá en el item
-      salePrice: 0, // Se definirá en el item
-      stock: 0,
-      type: newProduct.type,
-      categoryId: newProduct.categoryId,
-      category: {
-        id: category?.id || '',
-        name: category?.name || '',
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const temporaryProduct = createTemporaryProduct(newProduct, categories);
 
     setProducts((previous) => [...previous, temporaryProduct]);
     setCurrentItem({ ...currentItem, productId: temporaryProduct.id });
     setProductSearch(temporaryProduct.name);
 
-    setNewProduct({
-      name: '',
-      image: '',
-      categoryId: '',
-      type: 'NON_ALCOHOLIC',
-    });
+    setNewProduct(getInitialNewProductState());
     setShowNewProductForm(false);
 
     toast({
       title: 'Producto listo',
-      description: `'${temporaryProduct.name}' se agregará al registrar la compra.`,
+      description: `'${temporaryProduct.name}' ${PURCHASE_MESSAGES.SUCCESS.PRODUCT_READY}`,
     });
   };
 
@@ -295,7 +243,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     if (!newSupplier.name.trim()) {
       toast({
         title: 'Error',
-        description: 'El nombre del proveedor es requerido',
+        description: PURCHASE_MESSAGES.VALIDATION.SUPPLIER_REQUIRED,
         variant: 'destructive',
       });
       return;
@@ -325,10 +273,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
         throw new Error('Error creating supplier');
       }
     } catch (error: unknown) {
-      console.error(
-        'Error creating supplier:',
-        error instanceof Error ? error.message : error
-      );
+      handleApiError(error, PURCHASE_MESSAGES.ERROR.CREATE_SUPPLIER);
       // Fallback a localStorage
       // const updatedSuppliers = [...suppliers, supplier];
       // setSuppliers(updatedSuppliers);
@@ -337,12 +282,12 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     }
 
     // Limpiar el estado del formulario
-    setNewSupplier({ name: '', phone: '', image: '', nit: '', address: '' });
+    setNewSupplier(getInitialNewSupplierState());
     setShowNewSupplierForm(false);
 
     toast({
       title: 'Éxito',
-      description: 'Proveedor creado correctamente',
+      description: PURCHASE_MESSAGES.SUCCESS.SUPPLIER_CREATED,
     });
   };
 
@@ -356,23 +301,12 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     if (cancelConfirm) {
       // Segundo clic - confirmar cancelación
       clearFormData();
-      setPurchase({
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
-        supplierId: '',
-        paymentMethod: 'CASH',
-      });
+      setPurchase(getInitialPurchaseState());
       setItems([]);
-      setCurrentItem({
-        productId: '',
-        quantity: 1,
-        purchasePrice: 0,
-        salePrice: 0,
-        iva: 0,
-      });
-      setNewProduct({ name: '', image: '', categoryId: '', type: 'ALCOHOLIC' });
+      setCurrentItem(getInitialItemState());
+      setNewProduct(getInitialNewProductState());
       setShowNewProductForm(false);
-      setNewSupplier({ name: '', phone: '', image: '', nit: '', address: '' });
+      setNewSupplier(getInitialNewSupplierState());
       setShowNewSupplierForm(false);
 
       setCancelConfirm(false);
@@ -380,7 +314,10 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     } else {
       // Primer clic - activar confirmación
       setCancelConfirm(true);
-      setTimeout(() => setCancelConfirm(false), 3000);
+      setTimeout(
+        () => setCancelConfirm(false),
+        PURCHASE_CONSTANTS.CANCEL_CONFIRM_TIMEOUT
+      );
     }
   };
 
@@ -388,7 +325,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     if (!isCurrentItemValid(currentItem)) {
       toast({
         title: 'Error',
-        description: 'Complete todos los campos obligatorios del producto',
+        description: PURCHASE_MESSAGES.VALIDATION.ITEM_FIELDS_REQUIRED,
         variant: 'destructive',
       });
       return;
@@ -397,7 +334,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     const product = products.find((p) => p.id === currentItem.productId);
     if (!product) return;
 
-    const itemTotal = currentItem.quantity * currentItem.purchasePrice;
+    const itemTotal = calculateItemTotal(currentItem);
     const ivaAmount = (itemTotal * (currentItem.iva || 0)) / 100;
     const total = itemTotal + ivaAmount;
 
@@ -412,13 +349,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     };
 
     setItems([...items, newItem]);
-    setCurrentItem({
-      productId: '',
-      quantity: 1,
-      purchasePrice: 0,
-      salePrice: 0,
-      iva: 0,
-    });
+    setCurrentItem(getInitialItemState());
     setProductSearch('');
   };
 
@@ -426,21 +357,7 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     setItems(items.filter((_, index_) => index_ !== index));
   };
 
-  const calculateTotals = () => {
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * item.purchasePrice,
-      0
-    );
-    const totalIva = items.reduce(
-      (sum, item) =>
-        sum + (item.quantity * item.purchasePrice * (item.iva || 0)) / 100,
-      0
-    );
-    const grandTotal = subtotal + totalIva;
-    return { subtotal, totalIva, grandTotal };
-  };
-
-  const { subtotal, totalIva, grandTotal } = calculateTotals();
+  const { subtotal, totalIva, grandTotal } = calculatePurchaseTotals(items);
 
   const createProductFromItem = async (item: PurchaseItem) => {
     const temporaryProduct = products.find((p) => p.id === item.productId);
@@ -489,10 +406,14 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
   };
 
   const handleSubmit = async () => {
-    if (!purchase.supplierId || items.length === 0) {
+    const validation = validatePurchaseForm({
+      supplierId: purchase.supplierId,
+      items,
+    });
+    if (!validation.isValid) {
       toast({
         title: 'Error',
-        description: 'Seleccione un proveedor y agregue al menos un producto',
+        description: validation.errors.join(', '),
         variant: 'destructive',
       });
       return;
@@ -521,39 +442,28 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
         throw new Error('Error al registrar la compra');
       }
 
-      toast({ title: 'Éxito', description: 'Compra registrada correctamente' });
+      toast({
+        title: 'Éxito',
+        description: PURCHASE_MESSAGES.SUCCESS.PURCHASE_CREATED,
+      });
 
       // Limpiar el formulario
       clearFormData();
-      setPurchase({
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().slice(0, 5),
-        supplierId: '',
-        paymentMethod: 'CASH',
-      });
+      setPurchase(getInitialPurchaseState());
       setItems([]);
-      setCurrentItem({
-        productId: '',
-        quantity: 1,
-        purchasePrice: 0,
-        salePrice: 0,
-        iva: 0,
-      });
+      setCurrentItem(getInitialItemState());
       setProductSearch('');
       setSelectedSupplier(null);
 
       onClose();
     } catch (error: unknown) {
-      console.error(
-        'Error submitting purchase:',
-        error instanceof Error ? error.message : error
-      );
+      handleApiError(error, 'Error submitting purchase');
       toast({
         title: 'Error',
         description:
           error instanceof Error
             ? error.message
-            : 'Error al registrar la compra',
+            : PURCHASE_MESSAGES.ERROR.CREATE_PURCHASE,
         variant: 'destructive',
       });
     } finally {
@@ -707,12 +617,14 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
                 </Select>
                 <Select
                   value={newProduct.type}
-                  onValueChange={(value) =>
-                    setNewProduct({
-                      ...newProduct,
-                      type: value as 'ALCOHOLIC' | 'NON_ALCOHOLIC',
-                    })
-                  }
+                  onValueChange={(value: string) => {
+                    if (value === 'ALCOHOLIC' || value === 'NON_ALCOHOLIC') {
+                      setNewProduct({
+                        ...newProduct,
+                        type: value,
+                      });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo..." />

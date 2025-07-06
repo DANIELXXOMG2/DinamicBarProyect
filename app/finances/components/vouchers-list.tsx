@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 
 import { Trash2, Calendar, Clock, DollarSign } from 'lucide-react';
 
+import {
+  formatDate,
+  getCurrentDateISO,
+  filterByDate,
+  sortByCreatedAt,
+} from '../utils/date-helpers';
+import { formatCurrency, calculateTotal } from '../utils/currency-helpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,81 +31,74 @@ interface VouchersListProperties {
   readonly type: 'income' | 'expense';
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
+// Constantes para configuración de vouchers
+const VOUCHER_CONFIG = {
+  income: {
+    title: 'Ingresos',
+    colorClass: 'text-green-600',
+    bgColorClass: 'bg-green-50',
+    storageKey: 'income_vouchers',
+    apiType: 'INCOME',
+  },
+  expense: {
+    title: 'Egresos',
+    colorClass: 'text-red-600',
+    bgColorClass: 'bg-red-50',
+    storageKey: 'expense_vouchers',
+    apiType: 'EXPENSE',
+  },
+} as const;
+
+const VOUCHER_MESSAGES = {
+  DELETE_CONFIRM: '¿Está seguro de que desea eliminar este comprobante?',
+  DELETE_SUCCESS: 'Comprobante eliminado correctamente',
+  DELETE_ERROR: 'No se pudo eliminar el comprobante',
+  NO_VOUCHERS: 'No hay {type} registrados',
+  ADD_NEW: "Haga clic en 'Nuevo' para agregar uno",
+} as const;
 
 export function VouchersList({ type }: VouchersListProperties) {
   const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
   const [filteredVouchers, setFilteredVouchers] = useState<Voucher[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(getCurrentDateISO());
 
-  const storageKey = type === 'income' ? 'income_vouchers' : 'expense_vouchers';
-  const title = type === 'income' ? 'Ingresos' : 'Egresos';
-  const colorClass = type === 'income' ? 'text-green-600' : 'text-red-600';
-  const bgColorClass = type === 'income' ? 'bg-green-50' : 'bg-red-50';
+  const config = VOUCHER_CONFIG[type];
+  const { title, colorClass, bgColorClass, storageKey } = config;
 
   useEffect(() => {
     const loadVouchers = async () => {
       try {
-        const voucherType = type === 'income' ? 'INCOME' : 'EXPENSE';
+        const voucherType = config.apiType;
         const response = await fetch(`/api/vouchers?type=${voucherType}`);
         if (response.ok) {
           const data = await response.json();
-          const sortedVouchers = (data.vouchers || []).sort(
-            (a: Voucher, b: Voucher) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          const vouchers = (data.vouchers || []) as Voucher[];
+          const sortedVouchers = sortByCreatedAt(vouchers);
           setAllVouchers(sortedVouchers);
         } else {
           console.error('Error loading vouchers from API');
           const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
-          setAllVouchers(
-            [...stored].sort(
-              (a: Voucher, b: Voucher) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            )
-          );
+          setAllVouchers(sortByCreatedAt(stored));
         }
       } catch (error) {
         console.error('Error loading vouchers:', error);
         const stored: Voucher[] = JSON.parse(
           localStorage.getItem(storageKey) || '[]'
         );
-        setAllVouchers(
-          [...stored].sort(
-            (a: Voucher, b: Voucher) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-        );
+        setAllVouchers(sortByCreatedAt(stored));
       }
     };
 
     loadVouchers();
-  }, [type, storageKey]);
+  }, [type, storageKey, config.apiType]);
 
   useEffect(() => {
-    if (selectedDate) {
-      const filtered = allVouchers.filter(
-        (v) => v.date.split('T')[0] === selectedDate
-      );
-      setFilteredVouchers(filtered);
-    } else {
-      setFilteredVouchers(allVouchers);
-    }
+    const filtered = filterByDate(allVouchers, selectedDate);
+    setFilteredVouchers(selectedDate ? filtered : allVouchers);
   }, [selectedDate, allVouchers]);
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Está seguro de que desea eliminar este comprobante?')) {
+    if (confirm(VOUCHER_MESSAGES.DELETE_CONFIRM)) {
       try {
         const response = await fetch(`/api/vouchers/${id}`, {
           method: 'DELETE',
@@ -110,7 +110,7 @@ export function VouchersList({ type }: VouchersListProperties) {
 
           toast({
             title: 'Éxito',
-            description: 'Comprobante eliminado correctamente',
+            description: VOUCHER_MESSAGES.DELETE_SUCCESS,
           });
         } else {
           throw new Error('Error al eliminar el comprobante');
@@ -119,7 +119,7 @@ export function VouchersList({ type }: VouchersListProperties) {
         console.error('Error deleting voucher:', error);
         toast({
           title: 'Error',
-          description: 'No se pudo eliminar el comprobante',
+          description: VOUCHER_MESSAGES.DELETE_ERROR,
           variant: 'destructive',
         });
       }
@@ -127,7 +127,7 @@ export function VouchersList({ type }: VouchersListProperties) {
   };
 
   const getTotalAmount = () => {
-    return filteredVouchers.reduce((sum, voucher) => sum + voucher.amount, 0);
+    return calculateTotal(filteredVouchers);
   };
 
   if (allVouchers.length === 0) {
@@ -150,7 +150,7 @@ export function VouchersList({ type }: VouchersListProperties) {
           <div className="text-center">
             <p className="text-sm text-gray-600">Total {title} (Filtrado)</p>
             <p className={`text-2xl font-bold ${colorClass}`}>
-              ${getTotalAmount().toFixed(2)}
+              {formatCurrency(getTotalAmount())}
             </p>
           </div>
         </CardContent>
@@ -193,7 +193,7 @@ export function VouchersList({ type }: VouchersListProperties) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className={`font-bold ${colorClass}`}>
-                    ${voucher.amount.toFixed(2)}
+                    {formatCurrency(voucher.amount)}
                   </span>
                   <Button
                     variant="ghost"
