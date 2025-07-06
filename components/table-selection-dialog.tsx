@@ -87,7 +87,7 @@ export function TableSelectionDialog({
             Elige una mesa para asignar los productos.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto py-4">
           {loading ? (
             <div className="text-center">Cargando mesas...</div>
           ) : (

@@ -118,7 +118,7 @@ export function AddTableDialog({
                 placeholder="Ej: Mesa 10"
               />
               {nameError && (
-                <p className="text-red-500 text-sm mt-1">{nameError}</p>
+                <p className="mt-1 text-sm text-red-500">{nameError}</p>
               )}
             </div>
           </div>

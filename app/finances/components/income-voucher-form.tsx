@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
-import { Save } from 'lucide-react';
+import { Save, PanelLeftClose } from 'lucide-react';
 
+import { useFormManager } from '../hooks/use-form-manager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ interface VoucherData {
 export function IncomeVoucherForm({
   onVoucherCreated,
 }: IncomeVoucherFormProperties) {
+  const { toggleMinimize } = useFormManager();
   const { toast } = useToast();
   const [voucher, setVoucher] = useState({
     description: '',
@@ -140,8 +142,15 @@ export function IncomeVoucherForm({
 
   return (
     <Card className="mb-4">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Nuevo Comprobante de Ingreso</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => toggleMinimize('income')}
+        >
+          <PanelLeftClose className="size-5" />
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

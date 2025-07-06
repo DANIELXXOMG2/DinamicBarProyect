@@ -2,9 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-import { Plus, Save, Trash2, ImagePlus, Package, X } from 'lucide-react';
+import {
+  Plus,
+  Save,
+  Trash2,
+  ImagePlus,
+  Package,
+  X,
+  PanelLeftClose,
+} from 'lucide-react';
 import Image from 'next/image';
 
+import { useFormManager } from '../hooks/use-form-manager';
 import { PurchaseItem, Product, Supplier, Category } from '../types/purchase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +56,7 @@ const isCurrentItemValid = (item: {
 };
 
 export function PurchaseForm({ onClose }: PurchaseFormProperties) {
+  const { toggleMinimize } = useFormManager();
   const [purchase, setPurchase] = useState({
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
@@ -533,6 +543,13 @@ export function PurchaseForm({ onClose }: PurchaseFormProperties) {
     <div className="max-h-[80vh] space-y-4 overflow-y-auto">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Nueva Compra</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => toggleMinimize('purchase')}
+        >
+          <PanelLeftClose className="size-5" />
+        </Button>
       </CardHeader>
 
       <div className="space-y-4">
